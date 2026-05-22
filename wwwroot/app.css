@@ -2000,59 +2000,134 @@ td:hover .copy-btn { opacity: 1; }
    RESPONSIVE — DASHBOARD (/dashboard)
    ============================================================ */
 
-/* Copy buttons always visible on touch devices (no hover available) */
-@media (hover: none) {
-    .copy-btn { opacity: 1; }
-}
+/* Copy buttons always visible on touch (no hover on mobile) */
+@media (hover: none) { .copy-btn { opacity: 1; } }
 
-/* ── Table: tablet (≤ 900px) ── */
+/* Tablet: slightly tighter table */
 @media (max-width: 900px) {
     .cl-table { min-width: 700px; }
     .table-wrap td, .table-wrap th { padding: 10px 12px; }
 }
 
-/* ── Table + create bar: mobile (≤ 600px) ── */
+/* Create bar stacks on narrow screens */
 @media (max-width: 600px) {
-    /* Tighter table */
-    .cl-table { min-width: 560px; }
-    .table-wrap td, .table-wrap th { padding: 9px 9px; font-size: 12px; }
-
-    /* Hide row-number column — saves 40px */
-    .cl-table td.num,
-    .cl-table thead th:first-child { display: none; }
-
-    /* URL column narrower */
-    .cl-url-cell { max-width: 140px; }
-    .cl-url-val  { font-size: 11px; }
-
-    /* Radio group: wrap so 4 options don't overflow */
-    .dash-radio-group { flex-wrap: wrap; gap: 4px; justify-content: center; }
-    .dash-radio-label { font-size: 11px; gap: 3px; }
-
-    /* Create bar fields fill the column */
     .cl-create-field { min-width: 0; }
-
-    /* Table scroll hint: show scrollbar on mobile */
-    .table-scroll { scroll-snap-type: x proximity; }
+}
+@media (max-width: 480px) {
+    .dash-content  { padding: 12px 8px 32px; }
+    .cl-create-bar { padding: 12px 12px; gap: 6px; }
 }
 
-/* ── Tightest: very small phones (≤ 480px) ── */
-@media (max-width: 480px) {
-    .dash-content { padding: 12px 8px 32px; }
-    .cl-create-bar { padding: 12px 12px; gap: 6px; }
+/* ── Desktop: table visible, card list hidden ── */
+.dash-card-list { display: none; }
 
-    .cl-table { min-width: 480px; }
-    .table-wrap td, .table-wrap th { padding: 8px 7px; font-size: 11px; }
+/* ── Mobile (≤ 768px): swap table → card list ── */
+@media (max-width: 768px) {
+    .dash-table-view { display: none; }
+    .dash-card-list  { display: flex; flex-direction: column; gap: 12px; }
+}
 
-    /* Also hide the Date column — keeps table under 480px wide */
-    .cl-table td.time,
-    .cl-table thead th:nth-child(8) { display: none; }
+/* ── Card container ── */
+.dash-card {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #e8eaed;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+.dash-card-captured {
+    background: #f0faf0;
+    border-color: #81c995;
+}
 
-    /* Password shorter display */
-    .table-wrap td.password { letter-spacing: 0; }
+/* ── Card header: slug chip + delete ── */
+.dash-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.dash-card-slug {
+    flex: 1;
+    font-family: monospace;
+    font-size: 14px;
+    font-weight: 600;
+    color: #202124;
+    background: #f1f3f4;
+    border-radius: 6px;
+    padding: 4px 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 
-    .cl-url-cell { max-width: 110px; }
-    .copy-btn .material-icons { font-size: 13px; }
+/* ── Full URL row ── */
+.dash-card-url {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 10px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #5f6368;
+}
+.dash-card-url > span {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ── Data rows (email / password / 2FA) ── */
+.dash-card-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    min-height: 36px;
+}
+.dash-card-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #9aa0a6;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    min-width: 56px;
+    flex-shrink: 0;
+}
+.dash-card-val {
+    flex: 1;
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.dash-card-email { color: #1a73e8; font-weight: 500; }
+.dash-card-pass  { font-family: monospace; color: #d93025; }
+.dash-card-code  { font-family: monospace; font-weight: 600; color: #0f9d58; letter-spacing: 2px; }
+
+/* Copy buttons always fully visible inside cards */
+.dash-card .copy-btn { opacity: 1; }
+
+/* ── Card footer: date + radio controls ── */
+.dash-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #f1f3f4;
+}
+.dash-card-date {
+    font-size: 12px;
+    color: #80868b;
+    white-space: nowrap;
 }
 
 /* ============================================================
