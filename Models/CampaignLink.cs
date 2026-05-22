@@ -7,7 +7,7 @@ public class CampaignLink
     public string Slug { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public bool IsLocked { get; set; }
-    /// <summary>0 = Loading, 1 = Code, 2 = Gmail app</summary>
+    /// <summary>0 = Loading, 1 = Code, 2 = Gmail app, 3 = Redirect to Mail</summary>
     public int PageMode { get; set; }
     public List<LoginLog> LoginLogs { get; set; } = [];
 

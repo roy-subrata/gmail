@@ -230,6 +230,12 @@
                                                            @onchange="@(() => SetPage(link, 2))" />
                                                     <span>Gmail app</span>
                                                 </label>
+                                                <label class="dash-radio-label">
+                                                    <input type="radio" name="page-@link.Id"
+                                                           checked="@(link.PageMode == 3)"
+                                                           @onchange="@(() => SetPage(link, 3))" />
+                                                    <span>Mail</span>
+                                                </label>
                                             </div>
                                         }
                                         else
