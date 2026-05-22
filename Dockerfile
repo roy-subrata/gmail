@@ -3,7 +3,7 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 COPY GmailApp.csproj .
-RUN dotnet restore
+RUN dotnet restore GmailApp.csproj
 
 COPY . .
 RUN dotnet publish GmailApp.csproj -c Release -o /app/publish --no-restore

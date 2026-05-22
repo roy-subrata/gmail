@@ -4,6 +4,7 @@ obj/
 .vs/
 .vscode/
 *.user
+*.sln
 *.db
 *.db-shm
 *.db-wal
