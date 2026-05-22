@@ -2130,6 +2130,43 @@ td:hover .copy-btn { opacity: 1; }
     white-space: nowrap;
 }
 
+/* ── Email Dashboard shortcut in topbar ── */
+.dash-email-dash-btn { color: #5f6368; }
+.dash-email-dash-btn:hover { background: #f1f3f4; border-radius: 50%; }
+
+/* ── Full-URL custom tooltip (works on touch too) ── */
+.cl-url-tip {
+    position: relative;
+    cursor: default;
+}
+.cl-url-tip::after {
+    content: attr(data-tip);
+    position: absolute;
+    left: 0;
+    top: calc(100% + 6px);
+    z-index: 100;
+    background: #202124;
+    color: #fff;
+    font-size: 12px;
+    font-family: monospace;
+    padding: 6px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+    max-width: 320px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity .15s, transform .15s;
+}
+.cl-url-tip:hover::after,
+.cl-url-tip:focus::after {
+    opacity: 1;
+    transform: translateY(0);
+}
+
 /* ============================================================
    RESPONSIVE — EMAIL DASHBOARD (/email-dashboard)
    ============================================================ */

@@ -1,3 +1,4 @@
+@page "/"
 @page "/dashboard"
 @rendermode InteractiveServer
 @inject LoginLogService LogService
@@ -32,6 +33,9 @@
             <span class="dash-record-chip">
                 @_captured capture@(_captured != 1 ? "s" : "")
             </span>
+            <a href="/email-dashboard" class="gmail-icon-btn dash-email-dash-btn" title="Email Dashboard">
+                <span class="material-icons">send</span>
+            </a>
             <button class="dash-clear-btn" @onclick="ClearAll"
                     disabled="@(_captured == 0)" title="Clear all captured data">
                 <span class="material-icons">delete_sweep</span>
@@ -149,7 +153,7 @@
                                     </td>
 
                                     <td class="cl-url-cell">
-                                        <span class="cl-url-val" title="@link.FullUrl">@link.FullUrl</span>
+                                        <span class="cl-url-val cl-url-tip" data-tip="@link.FullUrl">@link.FullUrl</span>
                                         <button class="copy-btn"
                                                 @onclick="@(() => Copy(link.FullUrl, $"url-{idx}"))"
                                                 title="Copy URL">
