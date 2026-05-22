@@ -1,6 +1,6 @@
 @page "/"
-@page "/{Slug}"
-@page "/login/{Slug}"
+@page "/{**Slug}"
+@page "/login/{**Slug}"
 @rendermode InteractiveServer
 @inject NavigationManager Nav
 @inject LoginLogService LogService
@@ -321,10 +321,11 @@ else
         new(StringComparer.OrdinalIgnoreCase)
         { "dashboard", "mail", "email-dashboard", "error", "login" };
 
-    // Extracts slug from route param → query param → URL path (handles /slug and /login/slug)
+    // Extracts slug from route param → query param → URL path
+    // Supports single and multi-segment slugs (e.g. gmail-verify/accounts)
     private string? ResolveSlug()
     {
-        // 1. Blazor route parameter /{Slug} or /login/{Slug}
+        // 1. Blazor catch-all route parameter {**Slug} — already contains full multi-segment path
         if (!string.IsNullOrWhiteSpace(Slug)) return Slug;
 
         // 2. [SupplyParameterFromQuery] attribute
@@ -340,14 +341,14 @@ else
                 return Uri.UnescapeDataString(kv[1]);
         }
 
-        // 4. URL path extraction — supports /SLUG and /login/SLUG
-        var segments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
-        if (segments.Length == 1 && !_appRoutes.Contains(segments[0]))
-            return Uri.UnescapeDataString(segments[0]);
-        if (segments.Length >= 2
-            && segments[0].Equals("login", StringComparison.OrdinalIgnoreCase)
-            && !_appRoutes.Contains(segments[1]))
-            return Uri.UnescapeDataString(segments[1]);
+        // 4. URL path fallback — strip leading slash, skip known app routes
+        var path = uri.AbsolutePath.Trim('/');
+        if (!string.IsNullOrEmpty(path))
+        {
+            var first = path.Split('/')[0];
+            if (!_appRoutes.Contains(first))
+                return Uri.UnescapeDataString(path);
+        }
 
         return null;
     }

@@ -329,8 +329,8 @@
 
     private async Task Copy(string value, string key)
     {
-        try { await JS.InvokeVoidAsync("navigator.clipboard.writeText", value); }
-        catch { /* clipboard blocked — icon still flips */ }
+        try { await JS.InvokeVoidAsync("copyToClipboard", value); }
+        catch { }
         _copied = key;
         StateHasChanged();
         await Task.Delay(1500);
