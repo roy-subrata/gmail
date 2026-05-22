@@ -1,0 +1,23 @@
+services:
+  gmailapp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gmailapp
+    ports:
+      - "8080:8080"
+    volumes:
+      - gmailapp_data:/data
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Data Source=/data/gmail.db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  gmailapp_data:

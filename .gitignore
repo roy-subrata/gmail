@@ -1,0 +1,24 @@
+## .NET / MSBuild
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+## Rider / JetBrains
+.idea/
+
+## VS Code
+.vscode/
+
+## SQLite databases
+*.db
+*.db-shm
+*.db-wal
+
+## User-specific settings
+appsettings.Development.json
+
+## OS
+.DS_Store
+Thumbs.db

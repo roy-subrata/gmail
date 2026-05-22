@@ -1,0 +1,800 @@
+@page "/mail"
+@rendermode InteractiveServer
+@inject NavigationManager Nav
+
+<PageTitle>@(_openEmail != null ? _openEmail.Subject + " – Gmail" : _activeFolder + " – Gmail")</PageTitle>
+
+<div class="gmail-shell">
+
+    <!-- ===== TOP BAR ===== -->
+    <header class="gmail-topbar">
+        <div class="gmail-topbar-left">
+            <button class="gmail-icon-btn gmail-menu-btn" aria-label="Main menu" @onclick="ToggleSidebar">
+                <span class="material-icons">menu</span>
+            </button>
+            <a href="#" class="gmail-logo-link" aria-label="Gmail">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Gmail_icon_%282020%29.svg/512px-Gmail_icon_%282020%29.svg.png"
+                     alt="Gmail" class="gmail-logo-img" />
+                <span class="gmail-logo-text">Gmail</span>
+            </a>
+        </div>
+
+        <div class="gmail-search" role="search">
+            <button class="gmail-search-icon-btn" aria-label="Search">
+                <span class="material-icons">search</span>
+            </button>
+            <input type="text" placeholder="Search mail" class="gmail-search-input"
+                   aria-label="Search mail" @bind="_searchQuery" @bind:event="oninput" />
+            @if (!string.IsNullOrEmpty(_searchQuery))
+            {
+                <button class="gmail-search-clear" aria-label="Clear" @onclick="@(() => _searchQuery = "")">
+                    <span class="material-icons">close</span>
+                </button>
+            }
+            <button class="gmail-search-filter-btn" aria-label="Search options">
+                <span class="material-icons">tune</span>
+            </button>
+        </div>
+
+        <div class="gmail-topbar-right">
+            <button class="gmail-icon-btn" aria-label="Help"><span class="material-icons">help_outline</span></button>
+            <button class="gmail-icon-btn" aria-label="Settings"><span class="material-icons">settings</span></button>
+            <button class="gmail-icon-btn gmail-apps-btn" aria-label="Google apps">
+                <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path fill="#5f6368" d="M6 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6 0c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6 0c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM6 14c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6 0c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6 0c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM6 20c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6 0c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6 0c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/>
+                </svg>
+            </button>
+            <button class="gmail-avatar" aria-label="Google Account" @onclick="ToggleAccountMenu">
+                @_userInitial
+            </button>
+        </div>
+    </header>
+
+    <!-- Account dropdown -->
+    @if (_showAccountMenu)
+    {
+        <div class="acct-overlay" @onclick="() => _showAccountMenu = false"></div>
+        <div class="acct-menu" role="menu">
+            <div class="acct-menu-top">
+                <div class="acct-menu-avatar">@_userInitial</div>
+                <div class="acct-menu-info">
+                    <div class="acct-menu-name">Gmail User</div>
+                    <div class="acct-menu-email">@_userEmail</div>
+                </div>
+            </div>
+            <hr class="acct-divider" />
+            <button class="acct-menu-item" role="menuitem" @onclick="@(() => Nav.NavigateTo("/dashboard"))">
+                <span class="material-icons">admin_panel_settings</span>
+                Login Log Dashboard
+            </button>
+            <hr class="acct-divider" />
+            <button class="acct-menu-item acct-signout" role="menuitem" @onclick="SignOut">
+                <span class="material-icons">logout</span>
+                Sign out
+            </button>
+        </div>
+    }
+
+    <!-- Mobile sidebar overlay -->
+    @if (_sidebarOpen)
+    {
+        <div class="sidebar-overlay" @onclick="CloseSidebar" aria-hidden="true"></div>
+    }
+
+    <div class="gmail-body">
+
+        <!-- ===== SIDEBAR ===== -->
+        <nav class="gmail-sidebar @(_sidebarOpen ? "sidebar-open" : "")" aria-label="Folders">
+            <button class="gmail-compose-btn" aria-label="Compose">
+                <span class="material-icons">edit</span>
+                <span class="compose-label">Compose</span>
+            </button>
+            <ul class="gmail-nav-list">
+                <li class="gmail-nav-item @(_activeFolder == "Inbox" && _openEmail == null ? "active" : "")"
+                    @onclick='() => { NavTo("Inbox"); CloseEmail(); }'>
+                    <span class="material-icons">inbox</span>
+                    <span class="nav-label">Inbox</span>
+                    @if (_inboxUnreadCount > 0) { <span class="nav-badge">@_inboxUnreadCount</span> }
+                </li>
+                <li class="gmail-nav-item @(_activeFolder == "Starred" && _openEmail == null ? "active" : "")"
+                    @onclick='() => { NavTo("Starred"); CloseEmail(); }'>
+                    <span class="material-icons">@(_activeFolder == "Starred" ? "star" : "star_border")</span>
+                    <span class="nav-label">Starred</span>
+                </li>
+                <li class="gmail-nav-item @(_activeFolder == "Snoozed" && _openEmail == null ? "active" : "")"
+                    @onclick='() => { NavTo("Snoozed"); CloseEmail(); }'>
+                    <span class="material-icons">schedule</span>
+                    <span class="nav-label">Snoozed</span>
+                </li>
+                <li class="gmail-nav-item @(_activeFolder == "Sent" && _openEmail == null ? "active" : "")"
+                    @onclick='() => { NavTo("Sent"); CloseEmail(); }'>
+                    <span class="material-icons">send</span>
+                    <span class="nav-label">Sent</span>
+                </li>
+                <li class="gmail-nav-item @(_activeFolder == "Drafts" && _openEmail == null ? "active" : "")"
+                    @onclick='() => { NavTo("Drafts"); CloseEmail(); }'>
+                    <span class="material-icons">insert_drive_file</span>
+                    <span class="nav-label">Drafts</span>
+                    @if (_draftsCount > 0) { <span class="nav-badge">@_draftsCount</span> }
+                </li>
+                @if (_showMoreNav)
+                {
+                    <li class="gmail-nav-item @(_activeFolder == "AllMail" ? "active" : "")"
+                        @onclick='() => { NavTo("AllMail"); CloseEmail(); }'>
+                        <span class="material-icons">all_inbox</span>
+                        <span class="nav-label">All Mail</span>
+                    </li>
+                    <li class="gmail-nav-item @(_activeFolder == "Spam" ? "active" : "")"
+                        @onclick='() => { NavTo("Spam"); CloseEmail(); }'>
+                        <span class="material-icons">report</span>
+                        <span class="nav-label">Spam</span>
+                    </li>
+                    <li class="gmail-nav-item @(_activeFolder == "Trash" ? "active" : "")"
+                        @onclick='() => { NavTo("Trash"); CloseEmail(); }'>
+                        <span class="material-icons">delete</span>
+                        <span class="nav-label">Trash</span>
+                    </li>
+                }
+                <li class="gmail-nav-item gmail-nav-more" @onclick="ToggleMoreNav">
+                    <span class="material-icons">@(_showMoreNav ? "expand_less" : "expand_more")</span>
+                    <span class="nav-label">@(_showMoreNav ? "Less" : "More")</span>
+                </li>
+            </ul>
+            <div class="gmail-sidebar-section">
+                <div class="gmail-sidebar-section-label">Labels</div>
+                <ul class="gmail-nav-list">
+                    <li class="gmail-nav-item">
+                        <span class="nav-label-dot" style="background:#d50000"></span>
+                        <span class="nav-label">Important</span>
+                    </li>
+                    <li class="gmail-nav-item">
+                        <span class="nav-label-dot" style="background:#0b8043"></span>
+                        <span class="nav-label">Work</span>
+                    </li>
+                    <li class="gmail-nav-item">
+                        <span class="nav-label-dot" style="background:#1a73e8"></span>
+                        <span class="nav-label">Personal</span>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <!-- ===== EMAIL LIST VIEW ===== -->
+        @if (_openEmail == null)
+        {
+            <main class="gmail-email-list">
+                @if (_activeFolder == "Inbox")
+                {
+                    <div class="gmail-tabs" role="tablist">
+                        <button class="gmail-tab @(_activeTab == "Primary" ? "active" : "")"
+                                role="tab" @onclick='() => _activeTab = "Primary"'>
+                            <span class="material-icons">inbox</span><span>Primary</span>
+                        </button>
+                        <button class="gmail-tab @(_activeTab == "Social" ? "active" : "")"
+                                role="tab" @onclick='() => _activeTab = "Social"'>
+                            <span class="material-icons">people</span><span>Social</span>
+                        </button>
+                        <button class="gmail-tab @(_activeTab == "Promotions" ? "active" : "")"
+                                role="tab" @onclick='() => _activeTab = "Promotions"'>
+                            <span class="material-icons">local_offer</span><span>Promotions</span>
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <div class="folder-header">
+                        <span class="folder-title">@FolderDisplayName</span>
+                    </div>
+                }
+
+                @foreach (var email in FilteredEmails)
+                {
+                    <div class="gmail-email-row @(email.Unread ? "unread" : "")"
+                         @onclick="() => OpenEmail(email)">
+                        <div class="row-check" @onclick:stopPropagation="true">
+                            <input type="checkbox" class="email-checkbox" aria-label="Select email" />
+                        </div>
+                        <button class="row-star @(email.Starred ? "starred" : "")"
+                                aria-label="@(email.Starred ? "Starred" : "Not starred")"
+                                @onclick:stopPropagation="true"
+                                @onclick="() => ToggleStar(email)">
+                            <span class="material-icons">@(email.Starred ? "star" : "star_border")</span>
+                        </button>
+                        <div class="row-sender">@email.Sender</div>
+                        <div class="row-subject">
+                            <span class="subject-text">@email.Subject</span>
+                            <span class="subject-snippet"> — @email.Snippet</span>
+                        </div>
+                        @if (email.HasAttachment)
+                        {
+                            <span class="row-attach material-icons" title="Has attachment">attach_file</span>
+                        }
+                        <div class="row-time">@email.Time</div>
+                    </div>
+                }
+
+                @if (!FilteredEmails.Any())
+                {
+                    <div class="folder-empty">
+                        <span class="material-icons">@FolderEmptyIcon</span>
+                        <p>No conversations in @FolderDisplayName</p>
+                    </div>
+                }
+            </main>
+        }
+
+        <!-- ===== EMAIL READING VIEW ===== -->
+        @{ var mail = _openEmail; }
+        @if (mail != null)
+        {
+            var mailList = FilteredEmails.ToList();
+            var mailIdx  = mailList.IndexOf(mail);
+            <main class="email-view">
+
+                <!-- Reading toolbar -->
+                <div class="ev-toolbar">
+                    <button class="ev-icon-btn" aria-label="Back to inbox" @onclick="CloseEmail">
+                        <span class="material-icons">arrow_back</span>
+                    </button>
+                    <div class="ev-toolbar-actions">
+                        <button class="ev-icon-btn ev-hide-sm" title="Archive" @onclick="CloseEmail">
+                            <span class="material-icons">archive</span>
+                        </button>
+                        <button class="ev-icon-btn ev-hide-sm" title="Report spam">
+                            <span class="material-icons">report_gmailerrorred</span>
+                        </button>
+                        <button class="ev-icon-btn ev-hide-sm" title="Delete">
+                            <span class="material-icons">delete</span>
+                        </button>
+                        <div class="ev-sep ev-hide-sm"></div>
+                        <button class="ev-icon-btn ev-hide-md" title="Mark as unread">
+                            <span class="material-icons">mark_email_unread</span>
+                        </button>
+                        <button class="ev-icon-btn ev-hide-md" title="Snooze">
+                            <span class="material-icons">schedule</span>
+                        </button>
+                        <button class="ev-icon-btn ev-hide-md" title="Add to tasks">
+                            <span class="material-icons">task_alt</span>
+                        </button>
+                        <div class="ev-sep ev-hide-md"></div>
+                        <button class="ev-icon-btn ev-hide-md" title="Move to">
+                            <span class="material-icons">drive_file_move</span>
+                        </button>
+                        <button class="ev-icon-btn ev-hide-md" title="Labels">
+                            <span class="material-icons">label</span>
+                        </button>
+                        <button class="ev-icon-btn" title="More options">
+                            <span class="material-icons">more_vert</span>
+                        </button>
+                    </div>
+                    <div class="ev-toolbar-nav">
+                        <span class="ev-nav-count ev-hide-sm">
+                            @(mailIdx + 1) of @mailList.Count
+                        </span>
+                        <button class="ev-icon-btn" title="Newer" @onclick="NavPrevEmail"
+                                disabled="@(mailIdx <= 0)">
+                            <span class="material-icons">chevron_left</span>
+                        </button>
+                        <button class="ev-icon-btn" title="Older" @onclick="NavNextEmail"
+                                disabled="@(mailIdx >= mailList.Count - 1)">
+                            <span class="material-icons">chevron_right</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Email content -->
+                <div class="ev-content">
+
+                    <h1 class="ev-subject">@mail.Subject</h1>
+
+                    <div class="ev-labels">
+                        <span class="ev-label ev-label-inbox">Inbox</span>
+                        @if (mail.Starred)
+                        {
+                            <span class="ev-label ev-label-starred">Starred</span>
+                        }
+                    </div>
+
+                    <!-- Message card -->
+                    <div class="ev-message-card">
+                        <div class="ev-message-header" @onclick="ToggleHeaderExpand">
+                            <div class="ev-sender-avatar" style="background:@SenderColor(mail.Sender)">
+                                @(string.IsNullOrWhiteSpace(mail.Sender) ? "?" : mail.Sender.Trim()[0].ToString().ToUpper())
+                            </div>
+
+                            <div class="ev-sender-info">
+                                <div class="ev-sender-row">
+                                    <span class="ev-sender-name">@mail.Sender</span>
+                                    @if (!string.IsNullOrEmpty(mail.SenderEmail))
+                                    {
+                                        <span class="ev-sender-email">&lt;@mail.SenderEmail&gt;</span>
+                                    }
+                                </div>
+                                <div class="ev-to-row">
+                                    <span>to <strong>me</strong></span>
+                                    <span class="material-icons ev-chevron">
+                                        @(_headerExpanded ? "expand_less" : "expand_more")
+                                    </span>
+                                </div>
+                                @if (_headerExpanded)
+                                {
+                                    <div class="ev-header-detail">
+                                        <div class="ev-detail-row">
+                                            <span class="ev-detail-label">from:</span>
+                                            <span>@mail.Sender @(!string.IsNullOrEmpty(mail.SenderEmail) ? $"<{mail.SenderEmail}>" : "")</span>
+                                        </div>
+                                        <div class="ev-detail-row">
+                                            <span class="ev-detail-label">to:</span>
+                                            <span>@_userEmail</span>
+                                        </div>
+                                        <div class="ev-detail-row">
+                                            <span class="ev-detail-label">date:</span>
+                                            <span>@mail.FullDate</span>
+                                        </div>
+                                        <div class="ev-detail-row">
+                                            <span class="ev-detail-label">subject:</span>
+                                            <span>@mail.Subject</span>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+
+                            <div class="ev-message-meta">
+                                <span class="ev-msg-date">@mail.FullDate</span>
+                                <div class="ev-msg-actions">
+                                    <button class="ev-icon-btn" title="Star"
+                                            @onclick:stopPropagation="true"
+                                            @onclick="() => ToggleStar(mail)">
+                                        <span class="material-icons @(mail.Starred ? "ev-starred" : "")">
+                                            @(mail.Starred ? "star" : "star_border")
+                                        </span>
+                                    </button>
+                                    <button class="ev-icon-btn ev-hide-sm" title="Reply">
+                                        <span class="material-icons">reply</span>
+                                    </button>
+                                    <button class="ev-icon-btn" title="More">
+                                        <span class="material-icons">more_vert</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="ev-message-body">
+                            @((MarkupString)mail.Body)
+                        </div>
+
+                        @if (mail.HasAttachment)
+                        {
+                            <div class="ev-attachments">
+                                <div class="ev-attachment">
+                                    <span class="material-icons ev-attach-icon">picture_as_pdf</span>
+                                    <div class="ev-attach-info">
+                                        <div class="ev-attach-name">document.pdf</div>
+                                        <div class="ev-attach-size">124 KB · PDF</div>
+                                    </div>
+                                    <div class="ev-attach-actions">
+                                        <button class="ev-icon-btn" title="Download">
+                                            <span class="material-icons">download</span>
+                                        </button>
+                                        <button class="ev-icon-btn" title="Save to Drive">
+                                            <span class="material-icons">add_to_drive</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="ev-reply-area">
+                        <button class="ev-reply-btn">
+                            <span class="material-icons">reply</span>
+                            Reply
+                        </button>
+                        <button class="ev-reply-btn">
+                            <span class="material-icons">forward</span>
+                            Forward
+                        </button>
+                    </div>
+
+                </div>
+            </main>
+        }
+
+    </div>
+</div>
+
+@code {
+    private class EmailItem
+    {
+        public string Sender       { get; set; } = "";
+        public string SenderEmail  { get; set; } = "";
+        public string Subject      { get; set; } = "";
+        public string Snippet      { get; set; } = "";
+        public string Body         { get; set; } = "";
+        public string Time         { get; set; } = "";
+        public string FullDate     { get; set; } = "";
+        public bool   Unread       { get; set; }
+        public bool   Starred      { get; set; }
+        public string Tab          { get; set; } = "Primary";
+        public string Folder       { get; set; } = "Inbox";
+        public bool   HasAttachment{ get; set; }
+    }
+
+    private string _activeFolder    = "Inbox";
+    private string _activeTab       = "Primary";
+    private bool   _sidebarOpen;
+    private bool   _showMoreNav;
+    private bool   _showAccountMenu;
+    private bool   _headerExpanded;
+    private string _searchQuery     = "";
+    private string _userEmail       = "user@gmail.com";
+    private EmailItem? _openEmail;
+
+    private string _userInitial => string.IsNullOrEmpty(_userEmail) ? "G" : _userEmail[0].ToString().ToUpper();
+
+    private static string SenderColor(string s) => s switch
+    {
+        var n when n.StartsWith("Google") || n.StartsWith("accounts") => "#1a73e8",
+        var n when n.StartsWith("YouTube")    => "#ea4335",
+        var n when n.StartsWith("LinkedIn")   => "#0077b5",
+        var n when n.StartsWith("Draft")      => "#80868b",
+        var n when n.StartsWith("me")         => "#1a73e8",
+        _ => "#9c27b0"
+    };
+
+    private void NavTo(string folder) { _activeFolder = folder; _activeTab = "Primary"; _sidebarOpen = false; }
+    private void ToggleSidebar()  => _sidebarOpen = !_sidebarOpen;
+    private void CloseSidebar()   => _sidebarOpen = false;
+    private void ToggleMoreNav()  => _showMoreNav = !_showMoreNav;
+    private void ToggleStar(EmailItem e) => e.Starred = !e.Starred;
+    private void ToggleAccountMenu() => _showAccountMenu = !_showAccountMenu;
+    private void ToggleHeaderExpand() => _headerExpanded = !_headerExpanded;
+    private void SignOut() => Nav.NavigateTo("/", forceLoad: true);
+
+    private void OpenEmail(EmailItem email)
+    {
+        _openEmail = email;
+        _headerExpanded = false;
+        _sidebarOpen = false;
+        if (email.Unread) email.Unread = false;
+    }
+
+    private void CloseEmail()
+    {
+        _openEmail = null;
+        _headerExpanded = false;
+    }
+
+    private void NavPrevEmail()
+    {
+        var list = FilteredEmails.ToList();
+        var idx  = list.IndexOf(_openEmail!);
+        if (idx > 0) OpenEmail(list[idx - 1]);
+    }
+
+    private void NavNextEmail()
+    {
+        var list = FilteredEmails.ToList();
+        var idx  = list.IndexOf(_openEmail!);
+        if (idx < list.Count - 1) OpenEmail(list[idx + 1]);
+    }
+
+    private IEnumerable<EmailItem> FilteredEmails
+    {
+        get
+        {
+            var emails = _activeFolder == "Inbox"
+                ? _allEmails.Where(e => e.Folder == "Inbox" && e.Tab == _activeTab)
+                : _activeFolder == "AllMail"
+                    ? _allEmails
+                    : _allEmails.Where(e => e.Folder == _activeFolder);
+
+            if (!string.IsNullOrWhiteSpace(_searchQuery))
+            {
+                var q = _searchQuery.ToLower();
+                emails = emails.Where(e =>
+                    e.Sender.ToLower().Contains(q) ||
+                    e.Subject.ToLower().Contains(q) ||
+                    e.Snippet.ToLower().Contains(q));
+            }
+            return emails;
+        }
+    }
+
+    private int _inboxUnreadCount => _allEmails.Count(e => e.Folder == "Inbox" && e.Unread);
+    private int _draftsCount      => _allEmails.Count(e => e.Folder == "Drafts");
+
+    private string FolderDisplayName => _activeFolder switch { "AllMail" => "All Mail", _ => _activeFolder };
+
+    private string FolderEmptyIcon => _activeFolder switch
+    {
+        "Starred"  => "star_border",
+        "Snoozed"  => "schedule",
+        "Sent"     => "send",
+        "Drafts"   => "insert_drive_file",
+        "Spam"     => "report",
+        "Trash"    => "delete",
+        "AllMail"  => "all_inbox",
+        _          => "inbox"
+    };
+
+    private readonly List<EmailItem> _allEmails =
+    [
+        new()
+        {
+            Sender="Google", SenderEmail="no-reply@accounts.google.com",
+            Subject="Security alert",
+            Snippet="A new sign-in on Windows. If this was you…",
+            Time="Just now", FullDate="Mon, May 18, 2026, 11:42 AM",
+            Unread=true, Folder="Inbox", Tab="Primary",
+            Body="""
+                <p>Hi,</p>
+                <p>Your Google Account <strong>user@gmail.com</strong> was just signed in to from a new Windows device.</p>
+                <table style="margin:16px 0;border-collapse:collapse;">
+                  <tr><td style="padding:4px 16px 4px 0;color:#5f6368;font-size:13px;">Device</td><td style="font-size:13px;">Windows · Chrome</td></tr>
+                  <tr><td style="padding:4px 16px 4px 0;color:#5f6368;font-size:13px;">Location</td><td style="font-size:13px;">United States (approximate)</td></tr>
+                  <tr><td style="padding:4px 16px 4px 0;color:#5f6368;font-size:13px;">Time</td><td style="font-size:13px;">Monday, May 18, 2026 at 11:42 AM UTC</td></tr>
+                </table>
+                <p>If this was you, you don't need to do anything. If you don't recognize this sign-in, your account may be compromised. <a href="#" style="color:#1a73e8;">Secure your account now.</a></p>
+                <br><p style="color:#5f6368;font-size:13px;">— The Google Accounts Team</p>
+                <p style="font-size:11px;color:#80868b;margin-top:24px;">Google LLC, 1600 Amphitheatre Pkwy, Mountain View, CA 94043</p>
+            """
+        },
+        new()
+        {
+            Sender="Google Team", SenderEmail="googleteam@google.com",
+            Subject="Welcome to Google",
+            Snippet="Your new account is ready. Get started with Google…",
+            Time="2:14 PM", FullDate="Mon, May 18, 2026, 2:14 PM",
+            Unread=true, Folder="Inbox", Tab="Primary", HasAttachment=true,
+            Body="""
+                <p>Hi there,</p>
+                <p>Welcome to Google! Your account is all set and ready to use.</p>
+                <p>Here's what you can do with your Google Account:</p>
+                <ul style="margin:12px 0;padding-left:20px;line-height:2;">
+                  <li><strong>Gmail</strong> — Send, receive and organize your email</li>
+                  <li><strong>Google Drive</strong> — Store 15 GB of files for free</li>
+                  <li><strong>Google Photos</strong> — Back up and share your memories</li>
+                  <li><strong>YouTube</strong> — Watch and create videos</li>
+                  <li><strong>Google Maps</strong> — Explore the world</li>
+                </ul>
+                <p>Visit <a href="#" style="color:#1a73e8;">myaccount.google.com</a> to manage your account settings and personalize your experience.</p>
+                <br><p>Cheers,<br><strong>The Google Team</strong></p>
+            """
+        },
+        new()
+        {
+            Sender="Google Play", SenderEmail="googleplay-noreply@google.com",
+            Subject="Your receipt from Google Play",
+            Snippet="Order confirmation · Google One 100 GB…",
+            Time="10:03 AM", FullDate="Mon, May 18, 2026, 10:03 AM",
+            Unread=true, Folder="Inbox", Tab="Primary", HasAttachment=true,
+            Body="""
+                <p>Thanks for your purchase!</p>
+                <table style="width:100%;max-width:480px;border-collapse:collapse;margin:16px 0;">
+                  <tr style="border-bottom:1px solid #e8eaed;">
+                    <td style="padding:10px 0;font-size:13px;color:#5f6368;">Order number</td>
+                    <td style="padding:10px 0;font-size:13px;text-align:right;">GPA.1234-5678-9012-34567</td>
+                  </tr>
+                  <tr style="border-bottom:1px solid #e8eaed;">
+                    <td style="padding:10px 0;font-size:13px;color:#5f6368;">Product</td>
+                    <td style="padding:10px 0;font-size:13px;text-align:right;">Google One 100 GB storage plan</td>
+                  </tr>
+                  <tr style="border-bottom:1px solid #e8eaed;">
+                    <td style="padding:10px 0;font-size:13px;color:#5f6368;">Billing cycle</td>
+                    <td style="padding:10px 0;font-size:13px;text-align:right;">Monthly</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:10px 0;font-size:15px;font-weight:600;">Total charged</td>
+                    <td style="padding:10px 0;font-size:15px;font-weight:600;text-align:right;">$1.99</td>
+                  </tr>
+                </table>
+                <p style="font-size:13px;color:#5f6368;">Your Google One subscription is now active. You have 100 GB of storage shared across Gmail, Drive, and Photos.</p>
+            """
+        },
+        new()
+        {
+            Sender="accounts.google.com", SenderEmail="no-reply@accounts.google.com",
+            Subject="Your Google Account",
+            Snippet="Hi, Your Google Account was recently used to sign in…",
+            Time="May 6", FullDate="Wed, May 6, 2026, 4:55 PM",
+            Folder="Inbox", Tab="Primary",
+            Body="""
+                <p>Hi,</p>
+                <p>Your Google Account <strong>user@gmail.com</strong> was recently used to sign in to a device. If this wasn't you, <a href="#" style="color:#1a73e8;">click here to secure your account</a>.</p>
+                <p>If you recognize this activity, you can safely ignore this email.</p>
+                <br><p style="color:#5f6368;font-size:13px;">— The Google Accounts Team</p>
+            """
+        },
+        new()
+        {
+            Sender="Google Drive", SenderEmail="drive-shares-noreply@google.com",
+            Subject="Shared: Project files",
+            Snippet="Roy shared a folder with you — 12 files updated…",
+            Time="May 5", FullDate="Tue, May 5, 2026, 9:30 AM",
+            Folder="Inbox", Tab="Primary",
+            Body="""
+                <p><strong>Roy</strong> shared a folder with you: <a href="#" style="color:#1a73e8;"><strong>Project files</strong></a></p>
+                <p style="color:#5f6368;font-size:13px;margin-top:4px;">12 files · Last updated May 5, 2026</p>
+                <div style="margin:20px 0;padding:16px;background:#f8f9fa;border-radius:8px;border:1px solid #e8eaed;">
+                    <p style="margin:0 0 8px;font-size:13px;color:#5f6368;">Shared with your account</p>
+                    <p style="margin:0;font-size:14px;">user@gmail.com</p>
+                </div>
+                <a href="#" style="display:inline-block;padding:10px 24px;background:#1a73e8;color:#fff;border-radius:24px;text-decoration:none;font-size:14px;font-weight:500;">Open in Drive</a>
+            """
+        },
+
+        new()
+        {
+            Sender="YouTube", SenderEmail="noreply@youtube.com",
+            Subject="New videos for you",
+            Snippet="Based on your recent activity, you might like…",
+            Time="Yesterday", FullDate="Sun, May 17, 2026, 8:00 AM",
+            Folder="Inbox", Tab="Social",
+            Body="""
+                <p>Based on your recent watch history, here are some videos we think you'll love:</p>
+                <ul style="margin:12px 0;padding-left:20px;line-height:2.2;font-size:14px;">
+                  <li>Build a full-stack app with Blazor in 2026</li>
+                  <li>Google I/O 2026 Keynote highlights</li>
+                  <li>10 VS Code tips you didn't know</li>
+                  <li>What's new in .NET 10</li>
+                </ul>
+                <a href="#" style="display:inline-block;padding:10px 24px;background:#ea4335;color:#fff;border-radius:24px;text-decoration:none;font-size:14px;font-weight:500;">Watch on YouTube</a>
+            """
+        },
+        new()
+        {
+            Sender="Google Photos", SenderEmail="photos-noreply@google.com",
+            Subject="Your memories",
+            Snippet="Look back on this day, 3 years ago…",
+            Time="May 7", FullDate="Wed, May 7, 2026, 9:15 AM",
+            Folder="Inbox", Tab="Social",
+            Body="""
+                <p>You have memories from <strong>3 years ago</strong> today. Take a look back!</p>
+                <div style="margin:20px 0;padding:20px;background:#f8f9fa;border-radius:12px;text-align:center;">
+                  <span class="material-icons" style="font-size:48px;color:#dadce0;">photo_library</span>
+                  <p style="color:#5f6368;font-size:14px;margin-top:8px;">May 7, 2023 · 24 photos</p>
+                </div>
+                <a href="#" style="display:inline-block;padding:10px 24px;background:#1a73e8;color:#fff;border-radius:24px;text-decoration:none;font-size:14px;font-weight:500;">View memories</a>
+            """
+        },
+        new()
+        {
+            Sender="LinkedIn", SenderEmail="messages-noreply@linkedin.com",
+            Subject="You have 3 new connections",
+            Snippet="Your network is growing — see who connected with you…",
+            Time="May 6", FullDate="Tue, May 6, 2026, 11:00 AM",
+            Unread=true, Folder="Inbox", Tab="Social",
+            Body="""
+                <p>Your network is growing! You have <strong>3 new connections</strong> this week.</p>
+                <ul style="margin:12px 0;padding-left:20px;line-height:2.2;font-size:14px;">
+                  <li>Alex Johnson · Software Engineer at Google</li>
+                  <li>Sarah Williams · Product Manager at Microsoft</li>
+                  <li>Michael Chen · Full Stack Developer</li>
+                </ul>
+                <a href="#" style="display:inline-block;padding:10px 24px;background:#0077b5;color:#fff;border-radius:24px;text-decoration:none;font-size:14px;font-weight:500;">View on LinkedIn</a>
+            """
+        },
+
+        new()
+        {
+            Sender="Google One", SenderEmail="googleone-noreply@google.com",
+            Subject="Storage running low",
+            Snippet="You've used 14 GB of your 15 GB. Upgrade today…",
+            Time="May 5", FullDate="Mon, May 5, 2026, 3:00 PM",
+            Unread=true, Folder="Inbox", Tab="Promotions",
+            Body="""
+                <p>You've used <strong>14 GB</strong> of your 15 GB of free Google storage.</p>
+                <div style="margin:16px 0;background:#e8eaed;border-radius:8px;height:12px;overflow:hidden;">
+                  <div style="background:#ea4335;height:100%;width:93%;border-radius:8px;"></div>
+                </div>
+                <p style="font-size:13px;color:#5f6368;">Gmail · Drive · Photos · 14 GB of 15 GB used</p>
+                <p style="margin-top:16px;">When you run out of storage, you won't be able to send or receive emails, save files in Drive, or back up photos.</p>
+                <div style="margin:24px 0;">
+                  <a href="#" style="display:inline-block;padding:10px 24px;background:#1a73e8;color:#fff;border-radius:24px;text-decoration:none;font-size:14px;font-weight:500;margin-right:12px;">Get more storage</a>
+                  <a href="#" style="display:inline-block;padding:10px 24px;border:1px solid #dadce0;color:#1a73e8;border-radius:24px;text-decoration:none;font-size:14px;font-weight:500;">Free up space</a>
+                </div>
+            """
+        },
+        new()
+        {
+            Sender="Google Store", SenderEmail="googlestore@google.com",
+            Subject="New Pixel deals",
+            Snippet="Check out our latest Pixel phone offers…",
+            Time="May 3", FullDate="Sat, May 3, 2026, 8:00 AM",
+            Folder="Inbox", Tab="Promotions",
+            Body="""
+                <p>Introducing the latest Pixel lineup — now with exclusive deals for Google Account holders.</p>
+                <ul style="margin:12px 0;padding-left:20px;line-height:2.2;font-size:14px;">
+                  <li><strong>Pixel 10 Pro</strong> — Save $200 with trade-in</li>
+                  <li><strong>Pixel 10</strong> — Starting at $699</li>
+                  <li><strong>Pixel Buds Pro 2</strong> — $20 off this week only</li>
+                </ul>
+                <a href="#" style="display:inline-block;padding:10px 24px;background:#202124;color:#fff;border-radius:24px;text-decoration:none;font-size:14px;font-weight:500;">Shop now</a>
+            """
+        },
+
+        new()
+        {
+            Sender="Google", SenderEmail="no-reply@accounts.google.com",
+            Subject="Security alert", Snippet="A new sign-in on Windows. If this was you…",
+            Time="Just now", FullDate="Mon, May 18, 2026, 11:42 AM",
+            Unread=true, Starred=true, Folder="Starred",
+            Body="<p>This is the starred copy of the security alert. See the Inbox version for full details.</p>"
+        },
+        new()
+        {
+            Sender="Google Team", SenderEmail="googleteam@google.com",
+            Subject="Welcome to Google", Snippet="Your new account is ready…",
+            Time="2:14 PM", FullDate="Mon, May 18, 2026, 2:14 PM",
+            Starred=true, Folder="Starred",
+            Body="<p>This is the starred copy of the welcome email. See the Inbox version for full details.</p>"
+        },
+
+        new()
+        {
+            Sender="Google Play", SenderEmail="googleplay-noreply@google.com",
+            Subject="Your receipt from Google Play", Snippet="Order confirmation · Google One 100 GB…",
+            Time="Tomorrow", FullDate="Tue, May 19, 2026, 10:00 AM",
+            Folder="Snoozed",
+            Body="<p>This email has been snoozed until tomorrow. It will reappear in your inbox then.</p>"
+        },
+
+        new()
+        {
+            Sender="me → support@google.com", SenderEmail="user@gmail.com",
+            Subject="Account recovery", Snippet="Hello, I need help recovering my account…",
+            Time="May 8", FullDate="Thu, May 8, 2026, 2:45 PM",
+            Folder="Sent",
+            Body="""
+                <p>Hello Google Support,</p>
+                <p>I need help recovering access to my Google Account. I've lost access to my recovery phone number and I'm unable to complete the verification step.</p>
+                <p>Could you please guide me through the account recovery process? My account email is user@gmail.com.</p>
+                <p>Thank you for your help.</p>
+                <br><p>Best regards,<br>Roy</p>
+            """
+        },
+        new()
+        {
+            Sender="me → team@google.com", SenderEmail="user@gmail.com",
+            Subject="Feedback", Snippet="I wanted to share some feedback about…",
+            Time="May 4", FullDate="Sun, May 4, 2026, 5:10 PM",
+            Folder="Sent",
+            Body="""
+                <p>Hi team,</p>
+                <p>I wanted to share some feedback about the new Gmail redesign. Overall, I love the cleaner interface and the updated Material 3 design language.</p>
+                <p>A few suggestions:</p>
+                <ul style="margin:12px 0;padding-left:20px;line-height:2;">
+                  <li>The search bar could be slightly taller for easier tap targets on mobile</li>
+                  <li>The compose button animation is very smooth — great work!</li>
+                </ul>
+                <p>Keep up the excellent work!</p>
+                <br><p>Best,<br>Roy</p>
+            """
+        },
+
+        new()
+        {
+            Sender="Draft", SenderEmail="",
+            Subject="Re: Security alert", Snippet="I'm writing to confirm that this sign-in was…",
+            Time="May 9", FullDate="Fri, May 9, 2026, 8:00 AM",
+            Unread=true, Folder="Drafts",
+            Body="""
+                <p>I'm writing to confirm that this sign-in was indeed me. I was using a new Windows laptop at the time and forgot to check the notification.</p>
+                <p>Please disregard any security concern on your end. My account is safe and I have enabled 2-Step Verification as an extra precaution.</p>
+                <br><p><em>[Draft — not yet sent]</em></p>
+            """
+        },
+        new()
+        {
+            Sender="Draft", SenderEmail="",
+            Subject="Password reset request", Snippet="Could you please help me reset my…",
+            Time="May 7", FullDate="Wed, May 7, 2026, 3:30 PM",
+            Folder="Drafts",
+            Body="""
+                <p>Could you please help me reset my password? I recently changed devices and can no longer access my recovery codes.</p>
+                <br><p><em>[Draft — not yet sent]</em></p>
+            """
+        },
+    ];
+}

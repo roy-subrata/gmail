@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build *)",
+      "Bash(dotnet add *)",
+      "Bash(Select-String -Pattern \"error|warning|succeeded|failed\")",
+      "Bash(Select-Object -First 30)",
+      "PowerShell(dotnet build *)",
+      "PowerShell(netstat *)",
+      "Bash(docker compose *)",
+      "Bash(docker --version)",
+      "Bash(docker build *)",
+      "Bash(git rm *)",
+      "Bash(git add *)"
+    ]
+  }
+}
