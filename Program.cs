@@ -37,6 +37,7 @@ if (!app.Environment.IsDevelopment())
 // In a container a reverse proxy handles TLS — skip the redirect there
 if (Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") != "true")
     app.UseHttpsRedirection();
+app.UseWebSockets();   // must be before MapRazorComponents so SignalR can upgrade to WS
 app.UseAntiforgery();
 app.MapGet("/health", () => Results.Ok());
 app.MapStaticAssets();
