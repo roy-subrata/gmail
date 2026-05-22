@@ -1662,9 +1662,15 @@ td:hover .copy-btn { opacity: 1; }
 .cl-row-captured:hover { background: #f0faf0 !important; }
 
 @media (max-width: 600px) {
-    .cl-create-bar { flex-direction: column; }
-    .cl-create-field-slug { flex: 1; }
-    .cl-create-sep { display: none; }
+    .cl-create-bar {
+        flex-direction: column;
+        align-items: stretch;   /* fill full width when stacked */
+    }
+    .cl-create-field,
+    .cl-create-field-slug { flex: 1 1 auto; min-width: 0; width: 100%; }
+    .cl-create-input { width: 100%; }
+    .cl-create-btn   { width: 100%; justify-content: center; }
+    .cl-create-sep   { display: none; }
 }
 
 /* Domain groups */
@@ -2009,10 +2015,6 @@ td:hover .copy-btn { opacity: 1; }
     .table-wrap td, .table-wrap th { padding: 10px 12px; }
 }
 
-/* Create bar stacks on narrow screens */
-@media (max-width: 600px) {
-    .cl-create-field { min-width: 0; }
-}
 @media (max-width: 480px) {
     .dash-content  { padding: 12px 8px 32px; }
     .cl-create-bar { padding: 12px 12px; gap: 6px; }
