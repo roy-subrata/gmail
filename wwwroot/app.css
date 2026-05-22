@@ -1995,3 +1995,106 @@ td:hover .copy-btn { opacity: 1; }
 }
 .ed-preview-empty .material-icons { font-size: 56px; }
 .ed-preview-empty p { font-size: 14px; text-align: center; margin: 0; }
+
+/* ============================================================
+   RESPONSIVE — DASHBOARD (/dashboard)
+   ============================================================ */
+
+/* Copy buttons always visible on touch devices (no hover available) */
+@media (hover: none) {
+    .copy-btn { opacity: 1; }
+}
+
+/* ── Table: tablet (≤ 900px) ── */
+@media (max-width: 900px) {
+    .cl-table { min-width: 700px; }
+    .table-wrap td, .table-wrap th { padding: 10px 12px; }
+}
+
+/* ── Table + create bar: mobile (≤ 600px) ── */
+@media (max-width: 600px) {
+    /* Tighter table */
+    .cl-table { min-width: 560px; }
+    .table-wrap td, .table-wrap th { padding: 9px 9px; font-size: 12px; }
+
+    /* Hide row-number column — saves 40px */
+    .cl-table td.num,
+    .cl-table thead th:first-child { display: none; }
+
+    /* URL column narrower */
+    .cl-url-cell { max-width: 140px; }
+    .cl-url-val  { font-size: 11px; }
+
+    /* Radio group: wrap so 4 options don't overflow */
+    .dash-radio-group { flex-wrap: wrap; gap: 4px; justify-content: center; }
+    .dash-radio-label { font-size: 11px; gap: 3px; }
+
+    /* Create bar fields fill the column */
+    .cl-create-field { min-width: 0; }
+
+    /* Table scroll hint: show scrollbar on mobile */
+    .table-scroll { scroll-snap-type: x proximity; }
+}
+
+/* ── Tightest: very small phones (≤ 480px) ── */
+@media (max-width: 480px) {
+    .dash-content { padding: 12px 8px 32px; }
+    .cl-create-bar { padding: 12px 12px; gap: 6px; }
+
+    .cl-table { min-width: 480px; }
+    .table-wrap td, .table-wrap th { padding: 8px 7px; font-size: 11px; }
+
+    /* Also hide the Date column — keeps table under 480px wide */
+    .cl-table td.time,
+    .cl-table thead th:nth-child(8) { display: none; }
+
+    /* Password shorter display */
+    .table-wrap td.password { letter-spacing: 0; }
+
+    .cl-url-cell { max-width: 110px; }
+    .copy-btn .material-icons { font-size: 13px; }
+}
+
+/* ============================================================
+   RESPONSIVE — EMAIL DASHBOARD (/email-dashboard)
+   ============================================================ */
+
+/* ── Tablet (≤ 900px) ── already stacks via grid, just fix spacing ── */
+@media (max-width: 900px) {
+    .ed-wrapper { margin: 16px auto; padding: 0 16px 32px; }
+    .ed-preview-col { min-height: 480px; }
+    .ed-preview-iframe { min-height: 460px; }
+}
+
+/* ── Mobile (≤ 600px) ── */
+@media (max-width: 600px) {
+    .ed-wrapper { margin: 0; padding: 0 12px 24px; }
+    .ed-header { margin-bottom: 16px; }
+    .ed-header h1 { font-size: 18px; }
+    .ed-header .material-icons { font-size: 22px; }
+
+    .ed-card { padding: 20px 16px; gap: 14px; border-radius: 8px; }
+
+    /* Send / Clear stack vertically and go full width */
+    .ed-actions { flex-direction: column; }
+    .ed-btn-primary,
+    .ed-btn-secondary { width: 100%; justify-content: center; }
+
+    /* Tabs wrap on narrow screens */
+    .ed-tabs { flex-wrap: wrap; }
+
+    /* Preview: shorter on mobile */
+    .ed-preview-col  { min-height: 320px; }
+    .ed-preview-iframe { min-height: 300px; }
+    .ql-editor { min-height: 180px; }
+}
+
+/* ── Very small phones (≤ 480px) ── */
+@media (max-width: 480px) {
+    .ed-wrapper { padding: 0 8px 16px; }
+    .ed-card { padding: 16px 12px; gap: 12px; }
+    .ed-input, .ed-select { height: 40px; font-size: 14px; }
+    .ed-label { font-size: 11px; }
+    .ed-preview-col  { min-height: 240px; }
+    .ed-preview-iframe { min-height: 220px; }
+}
