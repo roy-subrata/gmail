@@ -1004,17 +1004,18 @@ td:hover .copy-btn { opacity: 1; }
 }
 .gmail-email-row.unread .row-time { font-weight: 600; color: #202124; }
 
-/* ---- INBOX RESPONSIVE: TABLET ---- */
+/* ---- MAIL TOPBAR RESPONSIVE: TABLET (≤900px) ---- */
 @media (max-width: 900px) {
     .gmail-logo-text { display: none; }
+    /* hide help + settings on tablet; keep apps-grid + avatar */
     .gmail-icon-btn:not(.gmail-menu-btn):not(.gmail-apps-btn) { display: none; }
 }
 
+/* ---- MOBILE SIDEBAR (≤768px) ---- */
 @media (max-width: 768px) {
     .gmail-sidebar {
         position: fixed;
-        top: 64px;
-        left: 0;
+        top: 64px; left: 0;
         height: calc(100vh - 64px);
         height: calc(100dvh - 64px);
         z-index: 200;
@@ -1024,7 +1025,6 @@ td:hover .copy-btn { opacity: 1; }
         border-right: none;
     }
     .gmail-sidebar.sidebar-open { transform: translateX(0); }
-
     .sidebar-overlay {
         display: block;
         position: fixed;
@@ -1033,30 +1033,35 @@ td:hover .copy-btn { opacity: 1; }
         z-index: 199;
         backdrop-filter: blur(1px);
     }
-
-    .gmail-apps-btn { display: none; }
-    .row-sender { width: 120px; }
-    .subject-snippet { display: none; }
-    .row-time { width: 58px; }
-    .gmail-search { max-width: none; padding: 0 4px; height: 44px; }
+    .gmail-apps-btn   { display: none; }
+    .row-sender       { width: 120px; }
+    .subject-snippet  { display: none; }
+    .row-time         { width: 58px; }
+    .gmail-search     { max-width: none; padding: 0 4px; height: 44px; }
 }
 
+/* ---- SMALL PHONES (≤480px) ---- */
 @media (max-width: 480px) {
     .gmail-topbar {
-        padding: 6px 4px 6px 8px;
-        gap: 2px;
+        padding: 0 4px 0 6px;
+        gap: 0;
         height: 56px;
     }
-    .gmail-sidebar { top: 56px; height: calc(100vh - 56px); height: calc(100dvh - 56px); }
+    .gmail-topbar-left  { gap: 0; flex-shrink: 0; }
+    .gmail-topbar-right { gap: 0; flex-shrink: 0; }
+    .gmail-sidebar  { top: 56px; height: calc(100vh - 56px); height: calc(100dvh - 56px); }
     .sidebar-overlay { top: 56px; }
-    .gmail-logo-img { height: 22px; }
+    /* logo icon shrinks slightly */
+    .gmail-logo-link { padding: 2px 4px; }
     .gmail-logo-text { display: none; }
+    /* search bar gets remaining space */
+    .gmail-search { height: 40px; min-width: 0; }
+    /* email list tweaks */
     .row-check { display: none; }
     .row-attach { display: none; }
     .row-sender { width: 96px; font-size: 13px; }
-    .gmail-tab { padding: 10px 10px; font-size: 12px; gap: 4px; }
+    .gmail-tab  { padding: 10px; font-size: 12px; gap: 4px; }
     .gmail-tab .material-icons { font-size: 16px; }
-    .gmail-search { height: 40px; }
     .gmail-email-row { height: 50px; padding: 0 8px; gap: 4px; }
     .row-time { width: 50px; font-size: 11px; }
     .gmail-compose-btn { padding: 16px 18px; }
@@ -1522,16 +1527,27 @@ td:hover .copy-btn { opacity: 1; }
 /* Override old .dashboard padding inside dash-shell */
 .dash-shell .dashboard { padding: 0; background: transparent; }
 
-@media (max-width: 768px) {
+/* Dashboard topbar responsive */
+@media (max-width: 900px) {
     .dash-page-title { font-size: 15px; }
     .dash-record-chip { display: none; }
-    .dash-btn-label { display: none; }
-    .dash-clear-btn { padding: 0 10px; gap: 0; }
-    .dash-content { padding: 16px 12px 32px; }
 }
-@media (max-width: 480px) {
-    .dash-shell .gmail-topbar { height: 56px; }
-    .dash-page-title { display: none; }
+@media (max-width: 768px) {
+    .dash-btn-label   { display: none; }
+    .dash-clear-btn   { padding: 0 8px; gap: 0; min-width: 36px; }
+    .dash-content     { padding: 16px 12px 32px; }
+}
+@media (max-width: 600px) {
+    .dash-page-title  { display: none; }
+    .dash-shell .gmail-topbar { padding: 0 8px; gap: 2px; height: 56px; }
+    /* keep logo + back + right icons from wrapping */
+    .gmail-topbar-left { gap: 0; }
+    .gmail-topbar-right { gap: 0; }
+    .dash-clear-btn   { height: 32px; }
+}
+@media (max-width: 360px) {
+    /* ultra-narrow: hide email-dashboard shortcut to save space */
+    .dash-email-dash-btn { display: none; }
 }
 
 /* ============================================================
