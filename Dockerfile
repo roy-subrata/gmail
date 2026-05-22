@@ -6,7 +6,7 @@ COPY GmailApp.csproj .
 RUN dotnet restore GmailApp.csproj
 
 COPY . .
-RUN dotnet publish GmailApp.csproj -c Release -o /app/publish --no-restore
+RUN dotnet publish GmailApp.csproj -c Release -o /app/publish
 
 # ── Runtime stage ─────────────────────────────────────────────────────────────
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
