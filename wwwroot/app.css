@@ -1772,17 +1772,34 @@ td:hover .copy-btn { opacity: 1; }
 .url-delete-btn:hover { color: #d93025; background: #fce8e6; }
 .url-delete-btn .material-icons { font-size: 16px; }
 
-/* Link badge in log table */
+/* Link status badges */
 .link-badge {
     display: inline-block;
     padding: 2px 8px;
     border-radius: 10px;
     font-size: 11px;
     font-weight: 600;
-    background: #e8f0fe;
-    color: #1a73e8;
-    font-family: monospace;
+    white-space: nowrap;
 }
+.badge-active   { background: #e6f4ea; color: #137333; }
+.badge-opened   { background: #fef7e0; color: #b06000; }
+.badge-captured { background: #fce8e6; color: #c5221f; }
+
+/* New-link button */
+.url-new-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #5f6368;
+    padding: 4px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    transition: color 0.15s, background 0.15s;
+}
+.url-new-btn:hover { color: #1a73e8; background: #e8f0fe; }
+.url-new-btn .material-icons { font-size: 16px; }
+.cl-actions-cell { display: flex; gap: 2px; align-items: center; }
 .link-direct { font-size: 11px; color: #bdc1c6; font-style: italic; }
 
 .url-col-lock { display: flex; align-items: center; justify-content: center; }
@@ -1862,6 +1879,30 @@ td:hover .copy-btn { opacity: 1; }
 .ed-header .material-icons { font-size: 28px; color: #1a73e8; }
 .ed-header h1 { font-size: 22px; font-weight: 500; color: #202124; }
 
+.ed-back-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: #5f6368; flex-shrink: 0;
+    text-decoration: none;
+    transition: background 0.1s;
+    margin-right: 2px;
+}
+.ed-back-btn:hover { background: #f1f3f4; }
+.ed-back-btn .material-icons { font-size: 20px; color: #5f6368; }
+
+.ed-logout-btn {
+    margin-left: auto;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: #5f6368; flex-shrink: 0;
+    text-decoration: none;
+    transition: background 0.1s, color 0.1s;
+}
+.ed-logout-btn:hover { background: #fce8e6; color: #d93025; }
+.ed-logout-btn .material-icons { font-size: 20px; }
+
 .ed-card {
     background: #fff;
     border-radius: 12px;
@@ -1894,6 +1935,7 @@ td:hover .copy-btn { opacity: 1; }
 .ed-input-error { border-color: #d93025; }
 .ed-input-error:focus { box-shadow: 0 0 0 3px rgba(217,48,37,.15); }
 .ed-error-msg { font-size: 12px; color: #d93025; }
+.ed-hint { font-size: 12px; color: #80868b; line-height: 1.4; }
 
 .ql-toolbar.ql-snow {
     border: 1px solid #dadce0;
@@ -2148,9 +2190,25 @@ td:hover .copy-btn { opacity: 1; }
     white-space: nowrap;
 }
 
+/* ── Radio group is horizontal inside mobile cards ── */
+.dash-card-footer .dash-radio-group {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+}
+
 /* ── Email Dashboard shortcut in topbar ── */
 .dash-email-dash-btn { color: #5f6368; }
 .dash-email-dash-btn:hover { background: #f1f3f4; border-radius: 50%; }
+
+/* ── Logout button – Dashboard topbar ── */
+.dash-logout-btn { color: #5f6368; }
+.dash-logout-btn:hover { background: #fce8e6 !important; color: #d93025; }
+
+/* ── Tooltip max-width capped to viewport on small phones ── */
+@media (max-width: 480px) {
+    .cl-url-tip::after { max-width: calc(100vw - 48px); }
+}
 
 /* ── Full-URL custom tooltip (works on touch too) ── */
 .cl-url-tip {
@@ -2198,7 +2256,7 @@ td:hover .copy-btn { opacity: 1; }
 
 /* ── Mobile (≤ 600px) ── */
 @media (max-width: 600px) {
-    .ed-wrapper { margin: 0; padding: 0 12px 24px; }
+    .ed-wrapper { margin: 0; padding: 16px 12px 24px; }
     .ed-header { margin-bottom: 16px; }
     .ed-header h1 { font-size: 18px; }
     .ed-header .material-icons { font-size: 22px; }
@@ -2221,10 +2279,136 @@ td:hover .copy-btn { opacity: 1; }
 
 /* ── Very small phones (≤ 480px) ── */
 @media (max-width: 480px) {
-    .ed-wrapper { padding: 0 8px 16px; }
+    .ed-wrapper { padding: 12px 8px 16px; }
     .ed-card { padding: 16px 12px; gap: 12px; }
     .ed-input, .ed-select { height: 40px; font-size: 14px; }
     .ed-label { font-size: 11px; }
     .ed-preview-col  { min-height: 240px; }
     .ed-preview-iframe { min-height: 220px; }
+}
+
+/* ============================================================
+   ADMIN LOGIN PAGE (/admin-login)
+   ============================================================ */
+.al-page {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f1f3f4;
+    padding: 24px 16px;
+}
+
+.al-card {
+    width: 100%;
+    max-width: 400px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.12), 0 0 0 1px rgba(0,0,0,.04);
+    padding: 40px 36px 36px;
+    display: flex;
+    flex-direction: column;
+}
+
+.al-brand {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 24px;
+}
+.al-brand-text {
+    font-size: 24px;
+    font-weight: 400;
+    color: #5f6368;
+    font-family: 'Product Sans', 'Google Sans', Roboto, Arial, sans-serif;
+    letter-spacing: -0.5px;
+}
+
+.al-title {
+    font-size: 24px;
+    font-weight: 400;
+    color: #202124;
+    margin-bottom: 8px;
+    font-family: 'Google Sans', Roboto, Arial, sans-serif;
+}
+.al-subtitle {
+    font-size: 14px;
+    color: #5f6368;
+    line-height: 1.5;
+    margin-bottom: 24px;
+}
+
+.al-error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px;
+    background: #fce8e6;
+    border-radius: 6px;
+    color: #c5221f;
+    font-size: 13px;
+    margin-bottom: 20px;
+}
+.al-error .material-icons { font-size: 18px; flex-shrink: 0; }
+
+.al-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.al-field { display: flex; flex-direction: column; gap: 6px; }
+
+.al-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #5f6368;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+}
+
+.al-input {
+    height: 48px;
+    border: 1px solid #dadce0;
+    border-radius: 8px;
+    padding: 0 14px;
+    font-size: 15px;
+    font-family: inherit;
+    color: #202124;
+    outline: none;
+    background: #fff;
+    transition: border-color .15s, box-shadow .15s;
+}
+.al-input:focus {
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 3px rgba(26,115,232,.15);
+}
+
+.al-submit-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 48px;
+    background: #1a73e8;
+    color: #fff;
+    border: none;
+    border-radius: 24px;
+    font-size: 15px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: background .15s, box-shadow .15s;
+}
+.al-submit-btn:hover {
+    background: #1557b0;
+    box-shadow: 0 1px 6px rgba(26,115,232,.4);
+}
+.al-submit-btn .material-icons { font-size: 20px; }
+
+@media (max-width: 480px) {
+    .al-page  { padding: 0; background: #fff; align-items: flex-start; }
+    .al-card  { max-width: 100%; border-radius: 0; box-shadow: none; padding: 32px 20px 28px; }
 }

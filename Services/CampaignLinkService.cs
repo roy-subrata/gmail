@@ -65,4 +65,21 @@ public class CampaignLinkService(AppDbContext db)
         await db.SaveChangesAsync();
         appState.NotifyCampaignToggled(id, pageMode);
     }
+
+    public async Task MarkVisitedAsync(int id)
+    {
+        var link = await db.CampaignLinks.FindAsync(id);
+        if (link is null || link.IsVisited) return;
+        link.IsVisited = true;
+        await db.SaveChangesAsync();
+    }
+
+    public async Task<CampaignLink> CloneWithNewSlugAsync(int id)
+    {
+        var link = await db.CampaignLinks.FindAsync(id);
+        if (link is null) throw new InvalidOperationException("Link not found");
+        var newSlug = Convert.ToBase64String(Guid.NewGuid().ToByteArray())
+                             .Replace("+", "").Replace("/", "").Replace("=", "")[..8];
+        return await CreateAsync(link.Domain, newSlug);
+    }
 }

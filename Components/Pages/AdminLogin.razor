@@ -1,0 +1,57 @@
+@page "/admin-login"
+
+<PageTitle>Admin Login – Gmail</PageTitle>
+
+<div class="al-page">
+    <div class="al-card">
+
+        <div class="al-brand">
+            <GmailLogo />
+            <span class="al-brand-text">Gmail</span>
+        </div>
+
+        <h1 class="al-title">Dashboard Login</h1>
+        <p class="al-subtitle">Sign in to access the admin panel</p>
+
+        @if (Error == "1")
+        {
+            <div class="al-error">
+                <span class="material-icons">error_outline</span>
+                <span>Incorrect username or password.</span>
+            </div>
+        }
+
+        <form method="post" action="/do-login" class="al-form">
+            <input type="hidden" name="returnUrl" value="@SafeReturn" />
+
+            <div class="al-field">
+                <label class="al-label" for="al-user">Username</label>
+                <input id="al-user" class="al-input" type="text" name="username"
+                       autocomplete="username" required autofocus />
+            </div>
+
+            <div class="al-field">
+                <label class="al-label" for="al-pass">Password</label>
+                <input id="al-pass" class="al-input" type="password" name="password"
+                       autocomplete="current-password" required />
+            </div>
+
+            <button type="submit" class="al-submit-btn">
+                <span>Sign in</span>
+                <span class="material-icons">arrow_forward</span>
+            </button>
+        </form>
+
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "error")]
+    public string? Error { get; set; }
+
+    [SupplyParameterFromQuery(Name = "returnUrl")]
+    public string? ReturnUrl { get; set; }
+
+    private string SafeReturn =>
+        ReturnUrl?.StartsWith("/") == true ? ReturnUrl : "/";
+}
