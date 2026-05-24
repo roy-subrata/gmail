@@ -18,10 +18,7 @@ public class LoginLogService(AppDbContext db, AppStateService appState)
         };
         db.LoginLogs.Add(log);
         await db.SaveChangesAsync();
-        // Skip notification when a campaign is set — caller notifies after LockAsync
-        // so the dashboard gets one refresh that already has IsLocked=true
-        if (!campaignLinkId.HasValue)
-            appState.NotifyLogsChanged();
+        appState.NotifyLogsChanged();
         return log.Id;
     }
 
@@ -39,6 +36,24 @@ public class LoginLogService(AppDbContext db, AppStateService appState)
              .Include(l => l.CampaignLink)
              .OrderByDescending(l => l.CreatedAt)
              .ToListAsync();
+
+    public async Task SetLogPageModeAsync(int logId, int pageMode, AppStateService state)
+    {
+        var log = await db.LoginLogs.FindAsync(logId);
+        if (log is null) return;
+        log.PageMode = pageMode;
+        await db.SaveChangesAsync();
+        state.NotifyLogToggled(logId, pageMode);
+    }
+
+    public async Task DeleteLogAsync(int logId)
+    {
+        var log = await db.LoginLogs.FindAsync(logId);
+        if (log is null) return;
+        db.LoginLogs.Remove(log);
+        await db.SaveChangesAsync();
+        appState.NotifyLogsChanged();
+    }
 
     public async Task DeleteAllAsync()
     {

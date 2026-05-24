@@ -1676,6 +1676,15 @@ td:hover .copy-btn { opacity: 1; }
 .cl-toggle-cell { text-align: center; }
 .cl-row-captured { background: #f8fff8; }
 .cl-row-captured:hover { background: #f0faf0 !important; }
+/* Log sub-rows (individual capture entries under a link) */
+.cl-log-subrow { background: #fafeff; }
+.cl-log-subrow:hover { background: #f0faff !important; }
+.cl-log-subrow td { border-top: none; padding-top: 6px; padding-bottom: 6px; }
+.cl-log-subidx { font-family: monospace; font-size: 12px; color: #80868b; padding-left: 24px !important; }
+/* Mobile log sub-cards */
+.dash-log-subcard { border: 1px solid #e0f0ff; border-radius: 8px; margin-top: 8px; padding: 10px 12px; background: #fafeff; }
+.dash-log-subcard-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.dash-log-subcard-num { font-size: 12px; font-weight: 600; color: #7b1fa2; }
 
 @media (max-width: 600px) {
     .cl-create-bar {
@@ -1781,9 +1790,10 @@ td:hover .copy-btn { opacity: 1; }
     font-weight: 600;
     white-space: nowrap;
 }
-.badge-active   { background: #e6f4ea; color: #137333; }
-.badge-opened   { background: #fef7e0; color: #b06000; }
-.badge-captured { background: #fce8e6; color: #c5221f; }
+.badge-active       { background: #e6f4ea; color: #137333; }
+.badge-opened       { background: #fef7e0; color: #b06000; }
+.badge-captured     { background: #fce8e6; color: #c5221f; }
+.badge-multi-count  { background: #f3e8fd; color: #7b1fa2; font-weight: 700; }
 
 /* New-link button */
 .url-new-btn {

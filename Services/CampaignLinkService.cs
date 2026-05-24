@@ -57,15 +57,6 @@ public class CampaignLinkService(AppDbContext db)
         await db.SaveChangesAsync();
     }
 
-    public async Task SetPageModeAsync(int id, int pageMode, AppStateService appState)
-    {
-        var link = await db.CampaignLinks.FindAsync(id);
-        if (link is null) return;
-        link.PageMode = pageMode;
-        await db.SaveChangesAsync();
-        appState.NotifyCampaignToggled(id, pageMode);
-    }
-
     public async Task MarkVisitedAsync(int id)
     {
         var link = await db.CampaignLinks.FindAsync(id);

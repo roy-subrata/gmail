@@ -54,61 +54,31 @@
                     @if (subjectError) { <span class="ed-error-msg">Subject is required</span> }
                 </div>
 
-                <!-- Mode tabs -->
                 <div class="ed-field">
-                    <label class="ed-label">Email Body</label>
-                    <div class="ed-tabs">
-                        <button class="@(useTemplate ? "ed-tab ed-tab-on" : "ed-tab")"
-                                @onclick='() => SwitchMode(true)'>
-                            <span class="material-icons">auto_awesome</span>Templates
-                        </button>
-                        <button class="@(!useTemplate ? "ed-tab ed-tab-on" : "ed-tab")"
-                                @onclick='() => SwitchMode(false)'>
-                            <span class="material-icons">edit</span>Custom
-                        </button>
-                    </div>
+                    <label class="ed-label">Template</label>
+                    <select class="ed-select" @onchange="OnTemplateChanged">
+                        <option value="">— select a template —</option>
+                        @foreach (var t in templates)
+                        {
+                            <option value="@t.Id">@t.Name</option>
+                        }
+                    </select>
                 </div>
 
-                @if (useTemplate)
+                @if (selectedTemplate is not null)
                 {
-                    <div class="ed-field">
-                        <label class="ed-label">Choose Template</label>
-                        <select class="ed-select" @onchange="OnTemplateChanged">
-                            <option value="">— select a template —</option>
-                            @foreach (var t in templates)
-                            {
-                                <option value="@t.Id">@t.Name</option>
-                            }
-                        </select>
-                    </div>
-
-                    @if (selectedTemplate is not null)
-                    {
-                        <div class="ed-template-fields">
-                            @foreach (var field in selectedTemplate.Fields)
-                            {
-                                <div class="ed-field">
-                                    <label class="ed-label">@field.Label</label>
-                                    <input type="@field.Type"
-                                           value="@FieldVal(field.Key)"
-                                           @oninput="e => OnFieldInput(field.Key, e.Value?.ToString() ?? string.Empty)"
-                                           placeholder="@field.Placeholder"
-                                           class="ed-input" />
-                                </div>
-                            }
-                        </div>
-                    }
-                }
-                else
-                {
-                    <div class="ed-field">
-                        <div class="ed-editor-toolbar-extra">
-                            <button class="ed-btn-preview" @onclick="RefreshCustomPreview">
-                                <span class="material-icons">preview</span>
-                                <span>Preview</span>
-                            </button>
-                        </div>
-                        <div id="quill-editor" class="ed-editor"></div>
+                    <div class="ed-template-fields">
+                        @foreach (var field in selectedTemplate.Fields)
+                        {
+                            <div class="ed-field">
+                                <label class="ed-label">@field.Label</label>
+                                <input type="@field.Type"
+                                       value="@FieldVal(field.Key)"
+                                       @oninput="e => OnFieldInput(field.Key, e.Value?.ToString() ?? string.Empty)"
+                                       placeholder="@field.Placeholder"
+                                       class="ed-input" />
+                            </div>
+                        }
                     </div>
                 }
 
@@ -154,7 +124,7 @@
                 {
                     <div class="ed-preview-empty">
                         <span class="material-icons">mail_outline</span>
-                        <p>Select a template to see a live preview</p>
+                        <p>Choose a template to see a live preview</p>
                     </div>
                 }
                 else
@@ -179,8 +149,6 @@
     private string previewHtml  = string.Empty;
 
     private bool fromError, toError, subjectError, isSending, isSuccess;
-    private bool useTemplate = true;
-    private bool quillReady;
 
     private List<GmailApp.Models.EmailTemplate> templates = new();
     private GmailApp.Models.EmailTemplate? selectedTemplate;
@@ -194,24 +162,8 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!useTemplate && !quillReady)
-        {
-            await JS.InvokeVoidAsync("quillInterop.init", "quill-editor");
-            quillReady = true;
-        }
-
         if (!string.IsNullOrEmpty(previewHtml))
             await JS.InvokeVoidAsync("setIframeSrcdoc", "preview-iframe", previewHtml);
-    }
-
-    // ── mode switch ────────────────────────────────────────────────────────────
-
-    private void SwitchMode(bool toTemplate)
-    {
-        useTemplate = toTemplate;
-        if (!toTemplate) quillReady = false;
-        previewHtml = string.Empty;
-        statusMessage = string.Empty;
     }
 
     // ── template events ────────────────────────────────────────────────────────
@@ -263,20 +215,6 @@
             previewHtml = selectedTemplate.BuildHtml(fields);
     }
 
-    private async Task RefreshCustomPreview()
-    {
-        var html = await JS.InvokeAsync<string>("quillInterop.getHtml", "quill-editor");
-        previewHtml = string.IsNullOrWhiteSpace(html) || html == "<p><br></p>"
-            ? string.Empty
-            : WrapHtml(html);
-    }
-
-    private static string WrapHtml(string body) =>
-        "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><style>" +
-        "body{font-family:Arial,sans-serif;padding:24px;color:#202124;line-height:1.6;}" +
-        "img{max-width:100%;height:auto;}" +
-        "</style></head><body>" + body + "</body></html>";
-
     private string FieldVal(string key) =>
         fields.TryGetValue(key, out var v) ? v : string.Empty;
 
@@ -291,11 +229,14 @@
 
         if (fromError || toError || subjectError) return;
 
-        string htmlBody;
-        if (useTemplate && selectedTemplate is not null)
-            htmlBody = selectedTemplate.BuildHtml(fields);
-        else
-            htmlBody = await JS.InvokeAsync<string>("quillInterop.getHtml", "quill-editor");
+        if (selectedTemplate is null)
+        {
+            statusMessage = "Please select a template.";
+            isSuccess = false;
+            return;
+        }
+
+        var htmlBody = selectedTemplate.BuildHtml(fields);
 
         isSending = true;
         StateHasChanged();
@@ -307,14 +248,12 @@
         statusMessage = success ? "Email sent successfully!" : $"Failed to send: {error}";
     }
 
-    private async Task ClearForm()
+    private void ClearForm()
     {
         fromEmail = toEmail = subject = statusMessage = previewHtml = string.Empty;
         fromError = toError = subjectError = false;
         selectedTemplate = null;
         fields = new();
-        if (!useTemplate)
-            await JS.InvokeVoidAsync("quillInterop.clear", "quill-editor");
     }
 
     // ── helpers ────────────────────────────────────────────────────────────────

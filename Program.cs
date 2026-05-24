@@ -47,6 +47,9 @@ using (var scope = app.Services.CreateScope())
     var cols = db.Database.SqlQueryRaw<string>("SELECT name FROM pragma_table_info('CampaignLinks')").ToList();
     if (!cols.Contains("IsVisited"))
         db.Database.ExecuteSqlRaw("ALTER TABLE \"CampaignLinks\" ADD COLUMN \"IsVisited\" INTEGER NOT NULL DEFAULT 0");
+    var logCols = db.Database.SqlQueryRaw<string>("SELECT name FROM pragma_table_info('LoginLogs')").ToList();
+    if (!logCols.Contains("PageMode"))
+        db.Database.ExecuteSqlRaw("ALTER TABLE \"LoginLogs\" ADD COLUMN \"PageMode\" INTEGER NOT NULL DEFAULT 0");
 }
 
 if (!app.Environment.IsDevelopment())
