@@ -2,11 +2,11 @@ services:
   caddy:
     image: caddy:2-alpine
     container_name: caddy
+    command: caddy reverse-proxy --from ${DOMAIN} --to gmailapp:8080
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
