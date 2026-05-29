@@ -1,6 +1,7 @@
 ## .NET / MSBuild
 bin/
 obj/
+publish_output/
 *.user
 *.suo
 .vs/
@@ -22,3 +23,6 @@ appsettings.Development.json
 ## OS
 .DS_Store
 Thumbs.db
+
+## Secrets
+.env
