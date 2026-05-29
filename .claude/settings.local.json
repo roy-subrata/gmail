@@ -11,7 +11,16 @@
       "Bash(docker --version)",
       "Bash(docker build *)",
       "Bash(git rm *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(docker exec *)",
+      "Bash(docker run *)",
+      "Bash(Get-ChildItem -Path \"D:\\\\AI\\\\Gmail\\\\blazor-gmail\" -Directory)",
+      "Bash(Select-Object Name)",
+      "Bash(Get-ChildItem \"D:\\\\AI\\\\Gmail\\\\blazor-gmail\\\\wwwroot\" -Recurse)",
+      "Bash(Select-Object FullName)",
+      "Bash(dir \"D:\\\\AI\\\\Gmail\\\\blazor-gmail\\\\docs\")"
     ]
   }
 }
