@@ -1,3 +1,3 @@
 googgle.online {
-    reverse_proxy gmailapp:8080
+    reverse_proxy http://gmailapp:8080
 }
